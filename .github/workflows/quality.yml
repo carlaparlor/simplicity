@@ -73,6 +73,11 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_SANITIZERS=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - name: Stress native process startup (temporary diagnosis)
+        run: ctest --test-dir build --output-on-failure --repeat until-fail:30 -E architecture_policy
+      - name: Annotate failing CTest output
+        if: failure()
+        run: python3 tools/annotate_ctest.py build
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -91,15 +96,23 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_COVERAGE=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - name: Stress native process startup (temporary diagnosis)
+        run: ctest --test-dir build --output-on-failure --repeat until-fail:30 -E architecture_policy
+      - name: Annotate failing CTest output
+        if: failure()
+        run: python3 tools/annotate_ctest.py build
       - name: Temporary retrieve previous CTest failure details
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/carlaparlor/simplicity/actions/jobs/121308392930/logs > build/previous-coverage.log
           python3 - <<'PYDIAG'
-          from pathlib import Path
-          lines=Path('build/previous-coverage.log').read_text().splitlines()
+          import subprocess
+          result=subprocess.run(['gh','api','repos/carlaparlor/simplicity/actions/jobs/121308392930/logs'],capture_output=True,text=True)
+          if result.returncode:
+              print('::notice title=previous-log-retrieval::'+result.stderr[-3000:].replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+              raise SystemExit(result.returncode)
+          lines=result.stdout.splitlines()
           hits=[i for i,line in enumerate(lines) if 'Traceback' in line or 'FAIL:' in line or 'failed:' in line or '***Failed' in line or 'Error' in line]
           for n,i in enumerate(hits[:8]):
               text='\n'.join(lines[max(0,i-2):i+24])[-3500:]

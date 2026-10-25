@@ -60,3 +60,9 @@ padding/stroke readback and font/icon-mask tests. The coverage job's CTest faile
 Azure log download is unavailable from the coding environment. A temporary,
 read-only Actions log retrieval step will diagnose that exact failure before
 finalizing; no gate is being bypassed or marked passed without evidence.
+
+The next coverage CTest passed; log retrieval itself failed. A later ASan CTest
+also failed, so both Linux jobs now annotate their own failing CTest sections
+without relying on Azure downloads. Added four tests for annotation selection,
+command escaping, truncated/crash output and bounds. Temporary repeated native
+startup tests seek reproducible evidence rather than silently rerunning a red gate.
