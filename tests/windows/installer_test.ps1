@@ -71,6 +71,9 @@ try {
         $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
         Assert-True ($link.TargetPath -eq (Join-Path $installed 'simplicity.exe')) 'Shortcut must launch the native GUI directly'
         Assert-True ((Get-ItemProperty $key).InstallLocation.TrimEnd('\') -eq $installed) 'Wrong install location'
+        $legacy = Join-Path $installed 'Launch Simplicity.cmd'
+        if ($attempt -eq 1) { Set-Content -LiteralPath $legacy -Value '@echo legacy wrapper' -Encoding ascii }
+        else { Assert-True (-not (Test-Path $legacy)) 'Upgrade left the obsolete console wrapper behind' }
     }
     Run-Installer (Join-Path $installed 'unins000.exe') @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')
     Assert-True (-not (Test-Path (Join-Path $installed 'simplicity.exe'))) 'Executable left behind after uninstall'

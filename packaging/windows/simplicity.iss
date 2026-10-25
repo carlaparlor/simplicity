@@ -31,6 +31,9 @@ UninstallDisplayIcon={app}\simplicity.exe
 SetupLogging=yes
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+[InstallDelete]
+; Retire only our known legacy console wrapper when upgrading a previous preview.
+Type: files; Name: "{app}\Launch Simplicity.cmd"
 [Icons]
 Name: "{autoprograms}\Simplicity"; Filename: "{app}\simplicity.exe"; WorkingDir: "{app}"; IconFilename: "{app}\simplicity.exe"
 [Run]
