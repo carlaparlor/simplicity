@@ -9,7 +9,7 @@
   details stay beside the selection; advanced panels hide when not needed.
 
 ## What works now
-- Native resizable Windows GUI; minimum workspace 1080x700; initial 1440x900.
+- Native resizable Windows GUI; minimum workspace 1080x640; initial 1440x900.
 - Demo / New empty sketch, editable session title (double-click), searchable track
   starters, up to 24 tracks, add/delete/rename/select, mute/solo and level state.
 - Select sketch clips, drag horizontally with selectable snap, add a four-beat

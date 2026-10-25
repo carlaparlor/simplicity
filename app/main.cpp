@@ -1,4 +1,5 @@
 #include <simplicity/workspace_view.h>
+#include <algorithm>
 
 namespace {
 class Window final : public juce::DocumentWindow {
@@ -7,8 +8,13 @@ public:
         setUsingNativeTitleBar(false);
         auto* workspace = new simplicity::WorkspaceView();
         setContentOwned(workspace, true); setLookAndFeel(&workspace->getLookAndFeel());
-        setTitleBarHeight(26); setResizable(true, false); setResizeLimits(1080, 726, 3840, 2160);
-        centreWithSize(1440, 926); setVisible(true);
+        setTitleBarHeight(26); setResizable(true, false); setResizeLimits(1080, 666, 3840, 2160);
+        int width = 1440, height = 926;
+        if (const auto* display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()) {
+            width = std::clamp(display->userArea.getWidth() - 32, 1080, 1440);
+            height = std::clamp(display->userArea.getHeight() - 32, 666, 926);
+        }
+        centreWithSize(width, height); setVisible(true);
     }
     ~Window() override { setLookAndFeel(nullptr); }
     void closeButtonPressed() override { juce::JUCEApplication::getInstance()->systemRequestedQuit(); }

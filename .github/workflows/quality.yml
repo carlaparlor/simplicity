@@ -54,7 +54,7 @@ jobs:
           import base64
           from pathlib import Path
           data = base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode()
-          chunks = [data[i:i+24000] for i in range(0,len(data),24000)]
+          chunks = [data[i:i+3800] for i in range(0,len(data),3800)]
           for i, chunk in enumerate(chunks):
               print(f'::notice title=GUI screenshot {i+1}/{len(chunks)}::{chunk}')
   sanitizers:

@@ -20,7 +20,7 @@ Look-and-feel lifetime covers all child components. No audio callback exists her
 
 ## Tests
 `tests/gui_test.cpp` renders actual JUCE controls/windows, invokes control callbacks,
-checks state changes and resize layouts at 1080x700, 1440x900 and 1920x1080, and
+checks state changes and resize layouts at 1080x640, 1440x900 and 1920x1080, and
 writes a real PNG screenshot. The installed application has a timed --smoke-test
 mode writing a JSON report; installer/portable lifecycle tests exercise it.
 Internal GCC coverage includes domain/adapter/shell, not Windows-only rendering.

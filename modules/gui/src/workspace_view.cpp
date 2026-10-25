@@ -14,6 +14,18 @@ void text(juce::Graphics& g, const juce::String& s, juce::Rectangle<int> r, floa
     g.drawText(s, r, juce::Justification::centredLeft, true);
 }
 juce::String number(int n) { return juce::String(n).paddedLeft('0', 2); }
+class WindowButton final : public juce::Button {
+public:
+    int kind;
+    explicit WindowButton(int type) : Button(type == juce::DocumentWindow::closeButton ? "Close" : type == juce::DocumentWindow::minimiseButton ? "Minimize" : "Maximize or restore"), kind(type) { setTooltip(getName()); }
+    void paintButton(juce::Graphics& g, bool over, bool down) override {
+        g.fillAll(over ? (kind == juce::DocumentWindow::closeButton ? juce::Colour{0xffa54141} : line) : (down ? raised : bg));
+        g.setColour(ink); const float x = getWidth() * 0.5F, y = getHeight() * 0.5F;
+        if (kind == juce::DocumentWindow::closeButton) { g.drawLine(x - 4, y - 4, x + 4, y + 4); g.drawLine(x - 4, y + 4, x + 4, y - 4); }
+        else if (kind == juce::DocumentWindow::minimiseButton) g.drawLine(x - 4, y + 3, x + 4, y + 3);
+        else g.drawRect(juce::Rectangle<float>{x - 4, y - 4, 8, 8});
+    }
+};
 class BlockLook final : public juce::LookAndFeel_V4 {
 public:
     BlockLook() {
@@ -26,6 +38,11 @@ public:
         setColour(juce::PopupMenu::highlightedTextColourId, accent); setColour(juce::Label::textColourId, ink);
         setColour(juce::ScrollBar::thumbColourId, line.brighter(0.25F));
         setColour(juce::ResizableWindow::backgroundColourId, bg);
+    }
+    juce::Button* createDocumentWindowButton(int type) override { return new WindowButton(type); }
+    void drawDocumentWindowTitleBar(juce::DocumentWindow&, juce::Graphics& g, int width, int height,
+                                   int titleX, int titleWidth, const juce::Image*, bool) override {
+        g.fillAll(bg); text(g, "simplicity  /  workspace preview", {titleX + 6, 0, std::min(titleWidth, width - titleX), height}, 10, muted);
     }
     void drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool over, bool down) override {
         auto area = b.getLocalBounds(); const bool on = b.getToggleState();
@@ -295,7 +312,7 @@ public:
         browserToggle.setBounds(right - 303, 80, 84, 32); mixerToggle.setBounds(right - 211, 80, 74, 32); inspectorToggle.setBounds(right - 129, 80, 107, 32);
         browserArea = showBrowser ? area.removeFromLeft(202) : juce::Rectangle<int>{};
         inspectorArea = showInspector ? area.removeFromRight(218) : juce::Rectangle<int>{};
-        mixerArea = showMixer ? area.removeFromBottom(218) : juce::Rectangle<int>{}; arrangementArea = area;
+        mixerArea = showMixer ? area.removeFromBottom(std::clamp(area.getHeight() / 3 + 40, 184, 218)) : juce::Rectangle<int>{}; arrangementArea = area;
         auto top = area.removeFromTop(43); addTrack.setBounds(top.getX() + 14, top.getY() + 9, 76, 27); addClip.setBounds(top.getX() + 96, top.getY() + 9, 82, 27);
         zoomOut.setBounds(top.getRight() - 70, top.getY() + 9, 25, 27); zoomIn.setBounds(top.getRight() - 39, top.getY() + 9, 25, 27);
         rulerArea = area.removeFromTop(31); headers.setBounds(area.removeFromLeft(180)); lanes.setBounds(area);
@@ -347,8 +364,10 @@ public:
             const auto* c = model.clip(model.selectedClip());
             text(g, c ? juce::String(c->name) : "Select a sketch clip", {x, y + 363, 182, 25}, 13, ink, true);
             text(g, c ? "Start  " + juce::String(c->beat / 4 + 1, 2) + "  /  " + juce::String(c->length / 4, 1) + " bars" : "Click a block in the arrangement.", {x, y + 395, 182, 24}, 10, muted);
-            text(g, "Move clips by dragging.", {x, inspectorArea.getBottom() - 62, 182, 22}, 11, muted);
-            text(g, "Ctrl Z always has your back.", {x, inspectorArea.getBottom() - 40, 182, 22}, 11, muted);
+            if (inspectorArea.getHeight() > 580) {
+                text(g, "Move clips by dragging.", {x, inspectorArea.getBottom() - 62, 182, 22}, 11, muted);
+                text(g, "Ctrl Z always has your back.", {x, inspectorArea.getBottom() - 40, 182, 22}, 11, muted);
+            }
             g.setColour(line); g.drawVerticalLine(inspectorArea.getX(), static_cast<float>(y), static_cast<float>(inspectorArea.getBottom()));
         }
         if (showMixer) {
@@ -439,7 +458,7 @@ juce::String WorkspaceView::runSmokeTest() {
     perform(ShellAction::inspector); if (i.trackName.isVisible()) return "Inspector toggle failed"; perform(ShellAction::inspector);
     perform(ShellAction::playPause); if (!i.model.playing()) return "Visual play failed"; perform(ShellAction::stop);
     perform(ShellAction::undo); perform(ShellAction::redo); perform(ShellAction::help); if (!i.helpPanel.isVisible()) return "Help failed"; perform(ShellAction::help);
-    for (const auto size : {juce::Point<int>{1080, 700}, juce::Point<int>{1440, 900}, juce::Point<int>{1920, 1080}}) {
+    for (const auto size : {juce::Point<int>{1080, 640}, juce::Point<int>{1080, 700}, juce::Point<int>{1440, 900}, juce::Point<int>{1920, 1080}}) {
         setSize(size.x, size.y);
         if (i.lanes.getWidth() < 400 || i.lanes.getHeight() < 200 || !getLocalBounds().contains(i.inspectorArea) || i.addTrack.getBounds().intersects(i.zoomOut.getBounds())) return "Responsive layout failed";
         auto image = createComponentSnapshot(getLocalBounds()); if (!image.isValid()) return "Component render failed";
