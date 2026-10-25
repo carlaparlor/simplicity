@@ -22,4 +22,6 @@ catch { if ($_.Exception.Message -notmatch 'Missing prerequisite: Missing.Test.T
 try { Invoke-Checked 'cmd.exe' @('/c', 'exit', '37'); throw 'Expected native command failure' }
 catch { if ($_.Exception.Message -notmatch 'exit 37') { throw } }
 Invoke-Checked 'cmd.exe' @('/c', 'exit', '0')
+# Failure annotations are deliberately present so setup diagnostics survive inaccessible runner logs.
+if (-not ((Get-Content (Join-Path $root 'tools/windows/setup.ps1') -Raw) -match '::error::SETUP FAILED')) { throw 'CI setup failure annotation missing' }
 Write-Host 'PASS: PowerShell 5.1 parsing, cmd failure propagation, NoInstall, native command success/failure.'

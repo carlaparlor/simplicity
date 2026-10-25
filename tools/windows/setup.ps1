@@ -74,6 +74,7 @@ try {
     exit 0
 } catch {
     Write-Host "SETUP FAILED: $($_.Exception.Message)" -ForegroundColor Red
+    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host "::error::SETUP FAILED: $($_.Exception.Message)" }
     Write-Host 'Fix the reported prerequisite and re-run setup.cmd. Troubleshooting: docs/windows-setup.md'
     exit 1
 }

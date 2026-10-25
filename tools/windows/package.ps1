@@ -37,5 +37,6 @@ try {
     exit 0
 } catch {
     Write-Host "PACKAGING FAILED: $($_.Exception.Message)" -ForegroundColor Red
+    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host "::error::PACKAGING FAILED: $($_.Exception.Message)" }
     exit 1
 }
