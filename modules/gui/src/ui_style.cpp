@@ -55,12 +55,18 @@ Look::Look() {
     setColour(juce::PopupMenu::highlightedBackgroundColourId, selected); setColour(juce::PopupMenu::highlightedTextColourId, foreground);
     setColour(juce::ScrollBar::thumbColourId, selected); setColour(juce::ResizableWindow::backgroundColourId, background);
     setColour(juce::Slider::textBoxTextColourId, foreground); setColour(juce::Slider::textBoxBackgroundColourId, panel);
+    setColour(juce::Slider::textBoxHighlightColourId, selected);
     setColour(juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack); setColour(juce::Slider::backgroundColourId, panel);
     setColour(juce::TooltipWindow::backgroundColourId, raised); setColour(juce::TooltipWindow::textColourId, foreground); setColour(juce::TooltipWindow::outlineColourId, border);
 }
 juce::Font Look::getTextButtonFont(juce::TextButton&, int) { return juce::Font(font()); }
 juce::Font Look::getComboBoxFont(juce::ComboBox&) { return juce::Font(font()); }
 juce::Font Look::getPopupMenuFont() { return juce::Font(font(14)); }
+juce::Label* Look::createSliderTextBox(juce::Slider& slider) {
+    auto* box = juce::LookAndFeel_V4::createSliderTextBox(slider);
+    box->setFont(font(13)); box->setBorderSize({0,4,0,4});
+    return box;
+}
 void Look::drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool over, bool down) {
     const bool primary = static_cast<bool>(b.getProperties().getWithDefault("primary", false));
     const bool flat = static_cast<bool>(b.getProperties().getWithDefault("flat", false));

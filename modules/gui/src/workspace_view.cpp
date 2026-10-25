@@ -212,7 +212,7 @@ public:
         canvas.changed = [this] { refresh(); }; headers.changed = [this] { refresh(); }; browser.changed = [this] { refresh(); };
         mixerView.setViewedComponent(&mixerContent,false); mixerView.setScrollBarsShown(false,true); mixerView.setScrollBarThickness(7);
         helpPanel.close.onClick = [this] { owner.perform(ShellAction::help); };
-        setIDs(); startTimerHz(30);
+        owner.sendLookAndFeelChange(); setIDs(); startTimerHz(30);
     }
     ~Impl() override { stopTimer(); owner.setLookAndFeel(nullptr); }
     void setIDs() {
@@ -229,7 +229,7 @@ public:
         play.symbol = model.playing() ? ui::Glyph::pause : ui::Glyph::play; play.setName(model.playing() ? "Pause" : "Play"); play.setToggleState(model.playing(),juce::dontSendNotification); loop.setToggleState(model.loop,juce::dontSendNotification);
         browserToggle.setToggleState(showBrowser,juce::dontSendNotification); mixerToggle.setToggleState(showMixer,juce::dontSendNotification);
         headers.refresh(); browser.refresh();
-        if (channels.size()!=static_cast<int>(model.tracks().size())) { channels.clear(); for (int i=0;i<static_cast<int>(model.tracks().size());++i) { auto* c=channels.add(new Channel(model,i)); c->changed=[this]{refresh();}; mixerContent.addAndMakeVisible(c); } }
+        if (channels.size()!=static_cast<int>(model.tracks().size())) { channels.clear(); for (int i=0;i<static_cast<int>(model.tracks().size());++i) { auto* c=channels.add(new Channel(model,i)); c->changed=[this]{refresh();}; mixerContent.addAndMakeVisible(c); c->sendLookAndFeelChange(); } }
         for (auto* c:channels) c->refresh();
         wireShortcuts(owner); updatePosition(); owner.resized(); owner.repaint(); canvas.repaint();
     }
@@ -357,6 +357,7 @@ juce::String WorkspaceView::runSmokeTest() {
     for(int n=0;n<i.channels[0]->level.getNumChildComponents();++n)
         if(auto* candidate=dynamic_cast<juce::Label*>(i.channels[0]->level.getChildComponent(n)))levelText=candidate;
     if(levelText==nullptr)return "Editable mixer level field missing";
+    if(levelText->findColour(juce::Label::outlineColourId)!=juce::Colours::transparentBlack || levelText->getFont().getHeight()!=13 || levelText->findColour(juce::TextEditor::highlightColourId)!=ui::selected)return "Cached mixer textbox theme drifted";
     levelText->showEditor();
     if(levelText->getCurrentTextEditor()==nullptr)return "Mixer level text editor missing";
     levelText->getCurrentTextEditor()->setText("-9.5 dB",false); levelText->hideEditor(false);

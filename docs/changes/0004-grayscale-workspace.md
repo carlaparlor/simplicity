@@ -33,7 +33,10 @@ window uses the same art. No new dependency or module; explicit CMake sources.
   compression-variation regression proves this preserves the artwork guarantee.
 - Windows Debug/Release, GUI process/control/render and packaged executable-icon /
   installer/portable lifecycle gates: pending CI; no merge until all pass.
-- Actual redesigned Windows screenshot will replace prior render after validation.
+- Actual Windows render at b840dcf was retrieved and visually reviewed. It exposed
+  slider text boxes retaining cached upstream colours/font after dynamic insertion.
+  Explicit look-and-feel refresh plus neutral text selection/font regression now
+  prevent that drift; a fresh render is required before finalizing evidence.
 
 ## Acceptance / limitations
 Check compact toolbar and right-edge arrangement, browser tabs/search/selection,
