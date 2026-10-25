@@ -100,7 +100,8 @@ per-user installer, portable ZIP, and SHA256SUMS.txt under `build/packages`.
 It fails rather than emitting a Debug or untested package. Staging/build outputs
 are ignored by Git. No command publishes a release or modifies release tags.
 
-CI installs tool prerequisites on its disposable runner, exercises the real setup
+CI pins windows-2022 to match the supported VS2022 preset (not the drifting
+windows-latest image), installs packaging prerequisites on its disposable runner, exercises the real setup
 command in Debug/Release, parses scripts with PowerShell 5.1, verifies command
 failures propagate, compiles the installer, checks the compiled manifest/static
 runtime, launches portable/installed builds, reinstalls and uninstalls. Tests use

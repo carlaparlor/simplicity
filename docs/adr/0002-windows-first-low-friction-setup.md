@@ -16,7 +16,8 @@ public releases pending confirmation of suitable licensing/distribution terms.
 
 Support Windows 10/11 x64 with MSVC 2022; guard default CMake builds on other hosts.
 Keep explicit analysis-only Linux jobs for ASan/UBSan/gcov, not product support.
-Remove macOS/product OS matrices. Document the platform in agent instructions and
+Remove macOS/product OS matrices. Pin Windows CI to windows-2022, whose
+VS2022 toolchain matches the developer preset; windows-latest has moved beyond it. Document the platform in agent instructions and
 check the supported preset/installer/CI contracts automatically.
 
 Ship per-user Inno Setup installer + portable ZIP test artifacts, with static MSVC

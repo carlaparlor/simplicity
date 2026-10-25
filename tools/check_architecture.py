@@ -148,7 +148,7 @@ def validate(root: Path) -> list[str]:
             "pull_request:", "contents: read", "fetch-depth: 0",
             'python3 tools/check_architecture.py --base "$BASE_SHA"',
             "python3 -m unittest discover -s tests", "name: Windows x64 (${{ matrix.config }})",
-            "runs-on: windows-latest", "setup.cmd -NoInstall -Configuration ${{ matrix.config }}",
+            "runs-on: windows-2022", "setup.cmd -NoInstall -Configuration ${{ matrix.config }}",
             "config: [Debug, Release]", "-DSIMPLICITY_ANALYSIS_ONLY=ON",
             "./tests/windows/installer_test.ps1", "Simplicity-Windows-x64-development",
             "-DSIMPLICITY_SANITIZERS=ON", "-DSIMPLICITY_COVERAGE=ON",

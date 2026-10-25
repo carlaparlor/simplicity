@@ -20,8 +20,12 @@ commercial / decide-later licensing: prepare/test installers, hold public releas
 ## Verification
 Local internal-analysis environment (Debian, GCC 12.2, CMake 4.4.4, Python 3.11):
 - Default unsupported-host configure rejects with the intended Windows-only message.
-- Architecture contract and 37 policy mutation/change-evidence tests: passed.
+- Architecture contract and 38 policy mutation/change-evidence tests: passed.
 - JUCE-enabled internal coverage build: 7/7 CTest suites passed.
+- JUCE-enabled internal ASan/UBSan/leak detection: 7/7 suites passed, no reports.
+- Initial Windows CI found windows-latest ships a newer Visual Studio, not the
+  supported VS2022 toolchain. Pinned CI to windows-2022 rather than bypassing setup
+  prerequisites; added a regression policy check and actionable failure annotations.
 - Module coverage unchanged: 100% lines (31/31), 98.1% branches (53/54).
 Windows setup/installer results are recorded on the PR after actual hosted runs;
 Linux results are not represented as Windows installer evidence.

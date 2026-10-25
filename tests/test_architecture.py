@@ -159,6 +159,11 @@ class ArchitectureTests(PolicyFixture):
         path.write_text(path.read_text() + "\n# macos-latest product job\n")
         self.rejected("Product CI must target Windows only")
 
+    def test_windows_ci_matches_supported_vs2022_toolchain(self):
+        path = self.root / ".github/workflows/quality.yml"
+        path.write_text(path.read_text().replace("runs-on: windows-2022", "runs-on: windows-latest"))
+        self.rejected("Required CI workflow contract missing")
+
     def test_windows_guard_cannot_be_removed(self):
         path = self.root / "CMakeLists.txt"
         path.write_text(path.read_text().replace("if(NOT WIN32 AND NOT SIMPLICITY_ANALYSIS_ONLY)", "if(FALSE)"))
