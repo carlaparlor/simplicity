@@ -1,5 +1,15 @@
 # Architecture and enforceable boundaries
 
+## Product platform
+
+Windows 10/11 x64 only (ADR 0002). Default non-Windows configuration fails with a
+clear message. Internal tooling can explicitly set SIMPLICITY_ANALYSIS_ONLY=ON;
+that mode never enables Windows packaging and does not promise platform support.
+Windows uses MSVC with the static runtime to remove an end-user runtime installer.
+The Windows preset and per-user installer policy are checked at configure time;
+CI tests actual installer privileges, dependencies and install/remove behavior.
+A commercial/public release is not authorized until licensing is confirmed.
+
 ## Direction and ownership
 
 ```

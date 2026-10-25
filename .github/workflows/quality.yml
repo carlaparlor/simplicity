@@ -25,32 +25,34 @@ jobs:
         run: python3 tools/check_architecture.py --base "$BASE_SHA"
       - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
   build:
-    name: Native (${{ matrix.os }}, ${{ matrix.config }})
-    runs-on: ${{ matrix.os }}
+    name: Windows x64 (${{ matrix.config }})
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         config: [Debug, Release]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DSIMPLICITY_WITH_JUCE=ON
-      - run: cmake --build build --config ${{ matrix.config }} --parallel 2
-      - run: ctest --test-dir build -C ${{ matrix.config }} --output-on-failure
+      - name: Test scripts with Windows PowerShell 5.1
+        shell: powershell
+        run: ./tests/windows/scripts_test.ps1
+      - name: One-command developer setup (no prerequisite installs on CI)
+        shell: cmd
+        run: setup.cmd -NoInstall -Configuration ${{ matrix.config }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: tests-${{ matrix.os }}-${{ matrix.config }}
-          path: build/Testing/Temporary/
+          name: tests-windows-${{ matrix.config }}
+          path: build/windows/Testing/Temporary/
   sanitizers:
-    name: ASan and UBSan
+    name: Internal analysis — ASan and UBSan
     runs-on: ubuntu-latest
     env:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_SANITIZERS=ON
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_SANITIZERS=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -59,13 +61,13 @@ jobs:
           name: sanitizer-logs
           path: build/Testing/Temporary/
   coverage:
-    name: First-party coverage
+    name: Internal analysis — first-party coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - run: python3 -m venv .venv
       - run: .venv/bin/pip install -r tools/requirements-test.txt
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_COVERAGE=ON
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_COVERAGE=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
       - name: Enforce 95% lines and 90% branches
@@ -81,10 +83,39 @@ jobs:
           path: |
             build/coverage.xml
             build/Testing/Temporary/
+  package:
+    name: Windows installer and portable verification
+    runs-on: windows-latest
+    needs: [policy, build]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build and test the supported Release preset
+        shell: cmd
+        run: setup.cmd -NoInstall
+      - name: Fetch verified Inno Setup 6.4.3 compiler (build tool only)
+        shell: pwsh
+        run: |
+          $file = Join-Path $env:RUNNER_TEMP 'innosetup-6.4.3.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_4_3/innosetup-6.4.3.exe' -OutFile $file
+          if ((Get-FileHash $file -Algorithm SHA256).Hash -ne 'F3C42116542C4CC57263C5BA6C4FEABFC49FE771F2F98A79D2F7628B8762723B') { throw 'Inno Setup checksum mismatch' }
+          $process = Start-Process $file -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$env:RUNNER_TEMP\Inno Setup`"" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Compiler installation failed: $($process.ExitCode)" }
+      - name: Package installer, portable archive and checksums
+        shell: powershell
+        run: ./tools/windows/package.ps1 -Iscc "$env:RUNNER_TEMP/Inno Setup/ISCC.exe"
+      - name: Real installer and portable lifecycle tests
+        shell: powershell
+        run: ./tests/windows/installer_test.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Simplicity-Windows-x64-development
+          path: build/packages/*
+          if-no-files-found: error
+          retention-days: 14
   required:
     name: Required gates
     if: always()
-    needs: [policy, build, sanitizers, coverage]
+    needs: [policy, build, sanitizers, coverage, package]
     runs-on: ubuntu-latest
     steps:
       - name: Reject failed, cancelled or skipped prerequisites

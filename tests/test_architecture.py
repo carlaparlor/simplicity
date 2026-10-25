@@ -18,10 +18,12 @@ class PolicyFixture(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        for name in ("modules", "architecture", "docs", "tests", "app", ".github"):
+        for name in ("modules", "architecture", "docs", "tests", "app", ".github", "packaging", "cmake", "tools"):
             shutil.copytree(ROOT / name, self.root / name, ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copy(ROOT / "CMakeLists.txt", self.root)
         shutil.copy(ROOT / "AGENTS.md", self.root)
+        shutil.copy(ROOT / "setup.cmd", self.root)
+        shutil.copy(ROOT / "CMakePresets.json", self.root)
 
     def write(self, name, text):
         path = self.root / name
@@ -138,7 +140,7 @@ class ArchitectureTests(PolicyFixture):
 
     def test_required_ci_gate_cannot_be_removed(self):
         path = self.root / ".github/workflows/quality.yml"
-        path.write_text(path.read_text().replace("needs: [policy, build, sanitizers, coverage]", "needs: [policy]"))
+        path.write_text(path.read_text().replace("needs: [policy, build, sanitizers, coverage, package]", "needs: [policy]"))
         self.rejected("Required CI workflow contract missing")
 
     def test_protection_payload_cannot_be_weakened(self):
@@ -151,6 +153,33 @@ class ArchitectureTests(PolicyFixture):
     def test_workflow_instructions_cannot_be_removed(self):
         (self.root / "AGENTS.md").unlink()
         self.rejected("Workflow contract missing")
+
+    def test_non_windows_product_ci_is_rejected(self):
+        path = self.root / ".github/workflows/quality.yml"
+        path.write_text(path.read_text() + "\n# macos-latest product job\n")
+        self.rejected("Product CI must target Windows only")
+
+    def test_windows_guard_cannot_be_removed(self):
+        path = self.root / "CMakeLists.txt"
+        path.write_text(path.read_text().replace("if(NOT WIN32 AND NOT SIMPLICITY_ANALYSIS_ONLY)", "if(FALSE)"))
+        self.rejected("Windows setup contract missing")
+
+    def test_installer_must_not_require_admin(self):
+        path = self.root / "packaging/windows/simplicity.iss"
+        path.write_text(path.read_text().replace("PrivilegesRequired=lowest", "PrivilegesRequired=admin"))
+        self.rejected("Windows setup contract missing")
+
+    def test_static_runtime_contract(self):
+        path = self.root / "CMakeLists.txt"
+        path.write_text(path.read_text().replace("MultiThreaded$<$<CONFIG:Debug>:Debug>", "MultiThreadedDLL"))
+        self.rejected("Windows setup contract missing")
+
+    def test_preset_cannot_drop_juce(self):
+        path = self.root / "CMakePresets.json"
+        data = json.loads(path.read_text())
+        data["configurePresets"][0]["cacheVariables"]["SIMPLICITY_WITH_JUCE"] = "OFF"
+        path.write_text(json.dumps(data))
+        self.rejected("Windows preset must select")
 
     def test_comments_not_dependencies(self):
         self.write("modules/core/src/core.cpp", "// #include <simplicity/engine.h>\n/* #include UNKNOWN */\n")

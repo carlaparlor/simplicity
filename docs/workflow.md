@@ -5,7 +5,8 @@ The user has authorized this repeating cycle:
 1. **Request** — establish scope and acceptance criteria; only ask when blocked.
 2. **Implement** — code, regression/boundary tests, contracts, change record.
 3. **Validate** — architecture + change-evidence checks, policy tests, native debug
-   and release builds, JUCE integration, sanitizers and coverage. Fix failures.
+   and release builds on Windows x64, JUCE integration, installer/portable lifecycle
+   tests, internal sanitizers and coverage. Fix failures.
 4. **PR** — push the session branch and open a PR against main. Include the request,
    architecture impact, test commands/results, user test steps and limitations.
 5. **Merge** — wait for every required CI check to succeed; merge that explicit PR
@@ -52,3 +53,14 @@ A red or absent check means no merge. A permission/network failure is reported,
 not bypassed. Manual UI/audio testing remains pending until the user reports it.
 Coverage is evidence, not permission to delete assertions. An architectural rule
 change requires an ADR, policy tests and documentation in the same PR.
+
+## Windows setup and delivery contract
+
+Windows 10/11 x64 is the only supported product target (ADR 0002). No manual JUCE,
+compiler or runtime setup for end users. The developer entry point is setup.cmd.
+PRs must pass the actual Windows setup command, Debug/Release tests and a packaging
+job that installs, reinstalls, launches and uninstalls the generated installer and
+checks portable execution. Installer/portable artifacts appear on successful main
+runs; publishing a public release is deliberately not automated until the owner's
+commercial JUCE licensing/distribution decision is confirmed. Signing is also
+pending; do not promise a frictionless SmartScreen experience without it.
