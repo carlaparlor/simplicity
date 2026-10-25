@@ -353,6 +353,16 @@ juce::String WorkspaceView::runSmokeTest() {
     if(!i.model.tracks()[0].muted || !i.model.tracks()[0].solo)return "Track mute/solo failed";
     i.channels[0]->level.setValue(-12,juce::sendNotificationSync);
     if(i.model.tracks()[0].level!=-12)return "Mixer level control failed";
+    juce::Label* levelText=nullptr;
+    for(int n=0;n<i.channels[0]->level.getNumChildComponents();++n)
+        if(auto* candidate=dynamic_cast<juce::Label*>(i.channels[0]->level.getChildComponent(n)))levelText=candidate;
+    if(levelText==nullptr)return "Editable mixer level field missing";
+    levelText->showEditor();
+    if(levelText->getCurrentTextEditor()==nullptr)return "Mixer level text editor missing";
+    levelText->getCurrentTextEditor()->setText("-9.5 dB",false); levelText->hideEditor(false);
+    if(std::abs(i.model.tracks()[0].level+9.5)>0.001)return "Mixer dB text entry failed";
+    for(const double value:{-60.0,6.0}) { i.channels[0]->level.setValue(value,juce::sendNotificationSync); if(i.model.tracks()[0].level!=value)return "Mixer level boundary failed"; }
+    i.channels[0]->level.setValue(-12,juce::sendNotificationSync);
     i.channels[0]->mute.onClick(); i.channels[0]->solo.onClick();
     if(i.model.tracks()[0].muted || i.model.tracks()[0].solo)return "Mixer mute/solo failed";
     i.snap.setSelectedId(1,juce::sendNotificationSync); if(i.model.grid!=4)return "Snap control failed";
@@ -362,8 +372,8 @@ juce::String WorkspaceView::runSmokeTest() {
     if(keyPressed(juce::KeyPress(juce::KeyPress::spaceKey)) || i.model.playing() || keyPressed(juce::KeyPress('B')))return "Search shortcut isolation failed";
     grabKeyboardFocus();
     if(!clickIn(i.browser,"browser-templates") || i.browser.resultCount()!=4)return "Template tab failed";
-    i.browser.setQuery("rhythm");
-    if(i.browser.resultCount()!=1 || !clickIn(i.browser,"browser-row-0") || i.model.tracks().size()!=2 || i.model.tracks()[1].clips.size()!=4)return "Rhythm template failed";
+    i.model.seek(12); i.browser.setQuery("rhythm");
+    if(i.model.position()!=12 || i.browser.resultCount()!=1 || !clickIn(i.browser,"browser-row-0") || i.model.tracks().size()!=2 || i.model.tracks()[1].clips.size()!=4)return "Rhythm template failed";
     if(!clickIn(i.browser,"browser-session"))return "Session tab failed";
     i.browser.setQuery("rhythm");
     if(i.browser.resultCount()!=1 || !clickIn(i.browser,"browser-row-0") || i.model.selectedTrack()!=1)return "Session navigation failed";

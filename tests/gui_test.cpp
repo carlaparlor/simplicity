@@ -1,5 +1,6 @@
 #include <simplicity/workspace_view.h>
 #include <simplicity/ui_style.h>
+#include <simplicity/browser_panel.h>
 #include <simplicity/application_icon.h>
 #include "test_support.h"
 
@@ -22,6 +23,15 @@ int main(int argc, char** argv) {
     CHECK(icon.isValid()); CHECK(icon.getWidth()==256); CHECK(icon.getHeight()==256);
     CHECK(icon.getPixelAt(0,0).getAlpha()==0); CHECK(icon.getPixelAt(10,128)==juce::Colour(0xff5b5b5b));
     ui::Look look;
+    BrowserPanel::SearchField search;
+    search.setLookAndFeel(&look); search.setSize(208,33); search.setFont(ui::font());
+    search.setBorder({1,1,1,1}); search.setIndents(31,7); search.setTextToShowWhenEmpty("Search",ui::secondary);
+    const auto emptySearch=search.createComponentSnapshot(search.getLocalBounds());
+    CHECK(emptySearch.getPixelAt(0,16)==ui::border);
+    int placeholderPixels=0;
+    for(int y=7;y<27;++y)for(int x=32;x<95;++x)if(emptySearch.getPixelAt(x,y)!=ui::background)++placeholderPixels;
+    CHECK(placeholderPixels>10); // Overlay glyph must not swallow native placeholder/outline painting.
+    search.setLookAndFeel(nullptr);
     ui::IconButton button("Play",ui::Glyph::play); button.setLookAndFeel(&look); button.setSize(32,32);
     CHECK(button.getName()=="Play"); CHECK(button.getTooltip()=="Play");
     auto normal=button.createComponentSnapshot(button.getLocalBounds());

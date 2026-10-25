@@ -92,7 +92,9 @@ recording, timing/device safety or plugin compatibility is implied by GUI succes
 
 `tests/test_app_icon.py` checks all seven ICO directory frames, PNG signatures,
 chunk lengths/CRCs, size/format, neutral pixels and antialiased corners, exact
-runtime/resource art parity and deterministic byte-for-byte regeneration. Regenerate
+runtime/resource PNG byte parity and exact decoded-pixel regeneration. PNG
+compression bytes may differ across zlib/zlib-ng versions; local repeat generation
+is byte-identical, and a fixed pixel digest guards the artwork independently. Regenerate
 with `python tools/assets/make_app_icon.py`; no image/font libraries are needed.
 Windows installer tests extract the actual packaged EXE icon with System.Drawing,
 not merely inspect the RC source, and require the gray background/white glyph.

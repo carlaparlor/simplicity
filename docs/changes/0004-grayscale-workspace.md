@@ -16,14 +16,21 @@ window uses the same art. No new dependency or module; explicit CMake sources.
 - Local strict GCC C++20 syntax check: GUI sources, app and render test passed
   against pinned JUCE, -Wall -Wextra -Wpedantic -Werror. Not a Windows runtime test.
 - Local analysis CTest: 7/7 passed; separate ASan/UBSan/leak CTest: 7/7 passed.
-- Python icon/architecture policy suite: 47/47 passed. Generated header is UTF-8/LF
+- Python icon/architecture policy suite: 49/49 passed. Generated header is UTF-8/LF
   on every platform, with a matching .gitattributes rule.
 - Domain/adapter/shell coverage: 100% lines (150/150), 97.3% branches (215/221),
   100% functions (45/45); Windows-only GUI is outside these totals.
-- Added 4 deterministic icon/PNG/ICO tests and expanded native browser, inline
+- Added 5 deterministic icon/PNG/ICO tests and expanded native browser, inline
   editing, palette, icon, layout and removed-inspector regressions. Initial icon
   test incorrectly required fully transparent corners at 16 px: corrected to
   require antialias transparency there and fully clear corners at >=48 px.
+- Source review caught a search-overlay override omitting native editor painting;
+  restored the base placeholder/outline paint and added a render regression.
+- Initial Windows native GUI process/control/render tests passed, but policy tests
+  caught cross-platform PNG compression differences. Regeneration now enforces
+  exact decoded pixels (plus a fixed pixel digest), local repeat byte identity and
+  checked-in runtime/resource byte parity, not zlib compressor identity. A distinct
+  compression-variation regression proves this preserves the artwork guarantee.
 - Windows Debug/Release, GUI process/control/render and packaged executable-icon /
   installer/portable lifecycle gates: pending CI; no merge until all pass.
 - Actual redesigned Windows screenshot will replace prior render after validation.

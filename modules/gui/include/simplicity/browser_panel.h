@@ -19,7 +19,7 @@ public:
     [[nodiscard]] int resultCount() const noexcept { return static_cast<int>(results_.size()); }
     bool activateResult(int index);
     class SearchField final : public juce::TextEditor {
-        void paintOverChildren(juce::Graphics& g) override { ui::glyph(g, ui::Glyph::search, {9, 8, 17, 17}, ui::secondary); }
+        void paintOverChildren(juce::Graphics& g) override { juce::TextEditor::paintOverChildren(g); ui::glyph(g, ui::Glyph::search, {9, 8, 17, 17}, ui::secondary); }
     };
     SearchField search;
 private:

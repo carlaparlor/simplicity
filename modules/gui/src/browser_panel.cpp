@@ -12,7 +12,7 @@ BrowserPanel::BrowserPanel(Workspace& model) : model_(model) {
     session_.onClick = [this] { setTemplateTab(false); }; templatesButton_.onClick = [this] { setTemplateTab(true); };
     session_.setTooltip("Browse and select session tracks"); templatesButton_.setTooltip("Add in-memory track templates; no audio or instruments included");
     search.setName("Search browser"); search.setComponentID("browser-search"); search.setFont(ui::font(13));
-    search.setTextToShowWhenEmpty("Search", ui::secondary); search.setBorder({6, 31, 5, 8});
+    search.setTextToShowWhenEmpty("Search", ui::secondary); search.setBorder({1, 1, 1, 1}); search.setIndents(31, 7);
     search.onTextChange = [this] { updateResults(); };
     viewport_.setViewedComponent(&content_, false); viewport_.setScrollBarsShown(true, false); viewport_.setScrollBarThickness(6);
     for (int n = 0; n < Workspace::maxTracks; ++n) {

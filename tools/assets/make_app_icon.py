@@ -1,4 +1,7 @@
-"""Deterministic grayscale 's' icon, stdlib-only. Regenerate, never hand-edit outputs."""
+"""Deterministic grayscale s artwork, stdlib-only; never hand-edit outputs.
+PNG compression bytes may differ between zlib versions (including Windows zlib-ng);
+tests enforce exact decoded pixels and runtime/resource parity, not compressor identity.
+"""
 from pathlib import Path
 import math
 import struct

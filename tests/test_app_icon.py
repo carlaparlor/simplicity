@@ -1,4 +1,5 @@
 """Byte-level PNG/ICO and deterministic regeneration regressions; stdlib only."""
+import hashlib
 import importlib.util
 from pathlib import Path
 import re
@@ -51,31 +52,58 @@ class AppIconTests(unittest.TestCase):
         self.assertLess(rows[4], 255)  # Small frames have antialiased, not necessarily clear, corners.
         if size >= 48:
             self.assertEqual(rows[4], 0)
-        return data
+        return rows
 
-    def test_every_ico_frame_is_valid_grayscale_png(self):
-        data = (ROOT / 'app/assets/simplicity.ico').read_bytes()
+    def frames(self, data):
         self.assertEqual(struct.unpack_from('<HHH', data), (0, 1, len(icon.SIZES)))
+        frames = []
         end = 6+16*len(icon.SIZES)
         for index, size in enumerate(icon.SIZES):
             width, height, palette, reserved, planes, bits, length, offset = struct.unpack_from('<BBBBHHII', data, 6+16*index)
             self.assertEqual((width or 256, height or 256, palette, reserved, planes, bits), (size, size, 0, 0, 1, 32))
             self.assertEqual(offset, end)
             self.decode(data[offset:offset+length], size)
+            frames.append(data[offset:offset+length])
             end += length
         self.assertEqual(end, len(data))
+        return frames
+
+    def test_every_ico_frame_is_valid_grayscale_png(self):
+        self.frames((ROOT / 'app/assets/simplicity.ico').read_bytes())
 
     def test_runtime_png_matches_largest_resource_frame(self):
         header = (ROOT / 'modules/gui/include/simplicity/application_icon.h').read_text()
         embedded = bytes(int(b, 16) for b in re.findall(r'0x([0-9a-f]{2})', header))
-        self.assertEqual(embedded, self.decode(icon.png(256), 256))
+        self.assertEqual(embedded, self.frames((ROOT / 'app/assets/simplicity.ico').read_bytes())[-1])
+        self.assertEqual(self.decode(embedded, 256), self.decode(icon.png(256), 256))
 
-    def test_generator_reproduces_checked_in_assets(self):
+    def test_generator_reproduces_checked_in_pixels_and_local_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             icon.generate(root)
-            for path in ('app/assets/simplicity.ico', 'modules/gui/include/simplicity/application_icon.h'):
-                self.assertEqual((ROOT / path).read_bytes(), (root / path).read_bytes())
+            first = (root / 'app/assets/simplicity.ico').read_bytes()
+            header = (root / 'modules/gui/include/simplicity/application_icon.h').read_bytes()
+            icon.generate(root)
+            self.assertEqual(first, (root / 'app/assets/simplicity.ico').read_bytes())
+            self.assertEqual(header, (root / 'modules/gui/include/simplicity/application_icon.h').read_bytes())
+            # Windows Python can use zlib-ng; compression bytes are not an artwork identity.
+            expected = self.frames((ROOT / 'app/assets/simplicity.ico').read_bytes())
+            generated = self.frames(first)
+            for size, before, after in zip(icon.SIZES, expected, generated):
+                self.assertEqual(self.decode(before, size), self.decode(after, size),
+                                 f'Artwork changed at {size}px; zlib {zlib.ZLIB_RUNTIME_VERSION}')
+            embedded = bytes(int(b, 16) for b in re.findall(rb'0x([0-9a-f]{2})', header))
+            self.assertEqual(embedded, generated[-1])
+
+    def test_compression_variation_preserves_exact_pixels(self):
+        original = icon.png(32)
+        pixels = self.decode(original, 32)
+        alternative = (original[:33] + icon.chunk(b'IDAT', zlib.compress(pixels, 0))
+                       + icon.chunk(b'IEND', b''))
+        self.assertNotEqual(original, alternative)
+        self.assertEqual(self.decode(alternative, 32), pixels)
+        self.assertEqual(hashlib.sha256(pixels).hexdigest(),
+                         '1277a4079ac74bb3bdae4ac234da3fd286c0c770bac6fc1e8b66b118755303db')
 
     def test_resource_and_runtime_wiring_are_present(self):
         self.assertIn('1 ICON "@SIMPLICITY_ICON@"', (ROOT / 'app/resources.rc.in').read_text())
