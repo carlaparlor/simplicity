@@ -22,3 +22,8 @@ boundary mutation. All prior CI jobs/thresholds remain. Temporary annotations ca
 retrieve a real Windows render for inspection, then are removed (ADR 0004).
 Desktop readability/DPI/accessibility and actual licensing negotiation remain
 human acceptance tasks; tests and development artifacts do not clear rights.
+
+A coverage-run CTest failure with inaccessible Azure logs requires temporary
+read-only Actions permission on the coverage job to retrieve that exact prior job
+log into bounded GitHub annotations. It does not bypass a test or alter thresholds;
+remove the permission/retrieval step after diagnosis. All final gates must pass.

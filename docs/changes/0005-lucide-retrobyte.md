@@ -53,3 +53,10 @@ Lucide symbols in transport/browser/window controls; charcoal s in Explorer,
 taskbar/Alt-Tab and title bar. Test minimum size, DPI/readability, text entry and
 accessibility manually. Still in-memory sketches, no audio/recording/saving.
 Font license, commercial JUCE terms, signing and public release remain pending.
+
+### CI diagnostic follow-up
+Native Windows Debug/Release suites at bdb48ac passed, including the strict
+padding/stroke readback and font/icon-mask tests. The coverage job's CTest failed;
+Azure log download is unavailable from the coding environment. A temporary,
+read-only Actions log retrieval step will diagnose that exact failure before
+finalizing; no gate is being bypassed or marked passed without evidence.

@@ -79,6 +79,9 @@ jobs:
           name: sanitizer-logs
           path: build/Testing/Temporary/
   coverage:
+    permissions:
+      contents: read
+      actions: read # temporary: retrieve the previous failed CTest log
     name: Internal analysis — first-party coverage
     runs-on: ubuntu-latest
     steps:
@@ -88,6 +91,20 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_COVERAGE=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - name: Temporary retrieve previous CTest failure details
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/carlaparlor/simplicity/actions/jobs/121308392930/logs > build/previous-coverage.log
+          python3 - <<'PYDIAG'
+          from pathlib import Path
+          lines=Path('build/previous-coverage.log').read_text().splitlines()
+          hits=[i for i,line in enumerate(lines) if 'Traceback' in line or 'FAIL:' in line or 'failed:' in line or '***Failed' in line or 'Error' in line]
+          for n,i in enumerate(hits[:8]):
+              text='\n'.join(lines[max(0,i-2):i+24])[-3500:]
+              print('::notice title=previous-coverage-'+str(n)+'::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PYDIAG
       - name: Enforce 95% lines and 90% branches
         run: >-
           .venv/bin/gcovr --root . --filter 'modules/'
