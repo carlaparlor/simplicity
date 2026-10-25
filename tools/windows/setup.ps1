@@ -72,7 +72,7 @@ try {
     Invoke-Checked 'cmake.exe' @('--build', '--preset', $preset)
     Invoke-Checked 'ctest.exe' @('--preset', $preset)
     Write-Host "Ready: $root\build\windows\app\$Configuration\simplicity.exe"
-    Write-Host 'This is currently a headless bootstrap, not a complete DAW.'
+    Write-Host 'Native GUI shell ready. Audio/recording/project saving are not implemented yet.'
     exit 0
 } catch {
     Write-Host "SETUP FAILED: $($_.Exception.Message)" -ForegroundColor Red

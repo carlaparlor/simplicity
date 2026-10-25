@@ -186,6 +186,24 @@ class ArchitectureTests(PolicyFixture):
         path.write_text(json.dumps(data))
         self.rejected("Windows preset must select")
 
+    def test_shell_state_cannot_depend_on_juce(self):
+        self.write("modules/shell/src/workspace.cpp", "#include <juce_gui_basics/juce_gui_basics.h>\n")
+        self.rejected("JUCE may not leak")
+
+    def test_engine_cannot_include_gui(self):
+        self.write("modules/engine/src/engine.cpp", "#include <simplicity/workspace_view.h>\n")
+        self.rejected("undeclared dependency")
+
+    def test_gui_test_cannot_be_removed(self):
+        path = self.root / "tests/CMakeLists.txt"
+        path.write_text(path.read_text().replace("gui_controls_and_render", "deleted"))
+        self.rejected("Native GUI controls/render gate missing")
+
+    def test_gui_subsystem_required(self):
+        path = self.root / "app/CMakeLists.txt"
+        path.write_text(path.read_text().replace("WIN32 main.cpp", "main.cpp"))
+        self.rejected("native GUI subsystem")
+
     def test_comments_not_dependencies(self):
         self.write("modules/core/src/core.cpp", "// #include <simplicity/engine.h>\n/* #include UNKNOWN */\n")
         self.assertEqual(policy.validate(self.root), [])

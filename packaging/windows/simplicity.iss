@@ -32,6 +32,6 @@ SetupLogging=yes
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 [Icons]
-Name: "{autoprograms}\Simplicity"; Filename: "{app}\Launch Simplicity.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\simplicity.exe"
+Name: "{autoprograms}\Simplicity"; Filename: "{app}\simplicity.exe"; WorkingDir: "{app}"; IconFilename: "{app}\simplicity.exe"
 [Run]
-Filename: "{app}\Launch Simplicity.cmd"; Description: "Run Simplicity engine preview"; Flags: postinstall shellexec skipifsilent
+Filename: "{app}\simplicity.exe"; Description: "Open Simplicity"; Flags: postinstall nowait skipifsilent

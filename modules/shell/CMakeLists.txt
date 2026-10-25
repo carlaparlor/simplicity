@@ -1,0 +1,3 @@
+add_library(simplicity_shell STATIC src/workspace.cpp)
+target_include_directories(simplicity_shell PUBLIC include)
+simplicity_strict(simplicity_shell)

@@ -52,7 +52,7 @@ def validate(root: Path) -> list[str]:
             for dep in config["dependencies"]:
                 if dep not in modules or dep == name:
                     errors.append(f"{name}: invalid dependency {dep}")
-            allowed_external = ["juce::juce_audio_basics"] if name == "juce_adapter" else []
+            allowed_external = {"juce_adapter": ["juce::juce_audio_basics"], "gui": ["simplicity::juce_gui"]}.get(name, [])
             if config["external"] != allowed_external:
                 errors.append(f"{name}: unauthorized external dependencies")
         # Core and SDK must never acquire dependencies, even by changing the manifest.
@@ -136,7 +136,7 @@ def validate(root: Path) -> list[str]:
                         if owners[include] not in allowed:
                             errors.append(f"{relative}: undeclared dependency on {owners[include]}")
                     elif include.startswith("juce_"):
-                        if owner not in {"juce_adapter", "app", "tests"}:
+                        if owner not in {"juce_adapter", "gui", "app", "tests"}:
                             errors.append(f"{relative}: JUCE may not leak into domain modules")
                     elif "/" in include and include != "sys/types.h":
                         errors.append(f"{relative}: unregistered include {include}")
@@ -180,6 +180,14 @@ def validate(root: Path) -> list[str]:
                 or windows["cacheVariables"].get("SIMPLICITY_WITH_JUCE") != "ON"
                 or windows["cacheVariables"].get("SIMPLICITY_ANALYSIS_ONLY") != "OFF"):
             errors.append("Windows preset must select the supported x64/JUCE product toolchain")
+        gui_support = (root / "cmake/JuceGui.cmake").read_text()
+        for fragment in ("PRIVATE juce::juce_gui_basics", "JUCE_WEB_BROWSER=0", "JUCE_USE_CURL=0"):
+            if fragment not in gui_support:
+                errors.append(f"GUI dependency isolation contract missing: {fragment}")
+        if "WIN32 main.cpp" not in (root / "app/CMakeLists.txt").read_text():
+            errors.append("Windows product must use the native GUI subsystem, not a console launcher")
+        if "gui_controls_and_render" not in (root / "tests/CMakeLists.txt").read_text():
+            errors.append("Native GUI controls/render gate missing")
         protection = json.loads((root / ".github/branch-protection.json").read_text())
         if (protection["required_status_checks"] != {"strict": True, "contexts": ["Required gates"]}
                 or protection["enforce_admins"] is not True

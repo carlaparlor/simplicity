@@ -16,6 +16,7 @@ A commercial/public release is not authorized until licensing is confirmed.
 app -> juce_adapter -> engine -> core
              |
        juce_audio_basics
+app -> gui -> shell (message-thread-only sketch state)
 sdk (independent, C ABI)
 ```
 
@@ -90,3 +91,11 @@ security boundary. It cannot prove test quality, scalable design, semantic ABI
 compatibility or real-time safety. CI executes first-party code and should never
 receive secrets on untrusted PRs. Repository administrators can change policy;
 server-side protection, review discipline and test evidence remain necessary.
+
+## Native GUI shell (ADR 0003)
+The Windows application composes gui -> shell independently of the DSP modules.
+Pinned JUCE GUI module sources compile once behind simplicity::juce_gui; no WebView,
+browser or juceaide tool is required. Only Windows product builds include the GUI.
+Internal analysis retains domain/shell/adapter coverage and sanitizers, not rendering
+coverage. Required Windows tests exercise real controls, image render, native GUI
+process launch and installed/portable lifecycle. UI timers never schedule audio.

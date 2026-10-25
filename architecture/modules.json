@@ -1,9 +1,58 @@
 {
   "schema_version": 1,
   "modules": {
-    "core": {"dependencies": [], "external": [], "tests": ["tests/core_test.cpp"]},
-    "sdk": {"dependencies": [], "external": [], "tests": ["tests/sdk_test.c", "tests/sdk_cpp_test.cpp"]},
-    "engine": {"dependencies": ["core"], "external": [], "tests": ["tests/engine_test.cpp"]},
-    "juce_adapter": {"dependencies": ["engine"], "external": ["juce::juce_audio_basics"], "tests": ["tests/juce_adapter_test.cpp"]}
+    "core": {
+      "dependencies": [],
+      "external": [],
+      "tests": [
+        "tests/core_test.cpp"
+      ]
+    },
+    "sdk": {
+      "dependencies": [],
+      "external": [],
+      "tests": [
+        "tests/sdk_test.c",
+        "tests/sdk_cpp_test.cpp"
+      ]
+    },
+    "engine": {
+      "dependencies": [
+        "core"
+      ],
+      "external": [],
+      "tests": [
+        "tests/engine_test.cpp"
+      ]
+    },
+    "juce_adapter": {
+      "dependencies": [
+        "engine"
+      ],
+      "external": [
+        "juce::juce_audio_basics"
+      ],
+      "tests": [
+        "tests/juce_adapter_test.cpp"
+      ]
+    },
+    "shell": {
+      "dependencies": [],
+      "external": [],
+      "tests": [
+        "tests/workspace_test.cpp"
+      ]
+    },
+    "gui": {
+      "dependencies": [
+        "shell"
+      ],
+      "external": [
+        "simplicity::juce_gui"
+      ],
+      "tests": [
+        "tests/gui_test.cpp"
+      ]
+    }
   }
 }

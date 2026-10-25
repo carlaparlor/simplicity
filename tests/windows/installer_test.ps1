@@ -13,9 +13,16 @@ function Run-Installer([string]$File, [string[]]$Arguments) {
     Assert-True ($process.ExitCode -eq 0) "Installer failed: $File ($($process.ExitCode))"
 }
 function Test-Bootstrap([string]$Exe) {
-    $text = & $Exe 2>&1 | Out-String
-    Assert-True ($LASTEXITCODE -eq 0) "Bootstrap failed: $text"
-    Assert-True ($text -match 'Simplicity: C\+\+/JUCE engine bootstrap ready') "Missing readiness message: $text"
+    $report = Join-Path ([IO.Path]::GetTempPath()) ('simplicity-gui-' + [guid]::NewGuid() + '.json')
+    try {
+        $process = Start-Process -FilePath $Exe -ArgumentList '--smoke-test', '--report', "`"$report`"" -PassThru
+        if (-not $process.WaitForExit(60000)) { $process.Kill(); throw 'GUI smoke test timed out' }
+        $process.Refresh()
+        Assert-True ($process.ExitCode -eq 0) "GUI smoke test failed: $($process.ExitCode)"
+        Assert-True (Test-Path $report) 'GUI report missing'
+        $result = Get-Content $report -Raw | ConvertFrom-Json
+        Assert-True ($result.ok -and $result.application -eq 'Simplicity GUI shell') "GUI checks failed: $($result.error)"
+    } finally { if (Test-Path $report) { Remove-Item -LiteralPath $report } }
 }
 $packages = (Resolve-Path -LiteralPath $PackageDir).Path
 $workspace = Join-Path ([IO.Path]::GetTempPath()) ('Simplicity test & spaces ' + [guid]::NewGuid())
@@ -45,7 +52,7 @@ try {
     Assert-True ($LASTEXITCODE -eq 0) 'Cannot read installer manifest'
     Assert-True ((Get-Content $manifest -Raw) -match 'level="asInvoker"') 'Installer must not request elevation'
     Expand-Archive -LiteralPath (Join-Path $packages 'Simplicity-Portable.zip') -DestinationPath $portable
-    foreach ($file in @('simplicity.exe', 'Launch Simplicity.cmd', 'README.txt', 'notices/JUCE-LICENSE.md', 'notices/dependencies.md')) {
+    foreach ($file in @('simplicity.exe', 'README.txt', 'notices/JUCE-LICENSE.md', 'notices/dependencies.md')) {
         Assert-True (Test-Path (Join-Path $portable $file)) "Missing portable file: $file"
     }
     Test-Bootstrap (Join-Path $portable 'simplicity.exe')
@@ -61,6 +68,8 @@ try {
         Test-Bootstrap (Join-Path $installed 'simplicity.exe')
         Assert-True (Test-Path $key) 'Per-user uninstaller registration missing'
         Assert-True (Test-Path $shortcut) 'Start menu shortcut missing'
+        $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
+        Assert-True ($link.TargetPath -eq (Join-Path $installed 'simplicity.exe')) 'Shortcut must launch the native GUI directly'
         Assert-True ((Get-ItemProperty $key).InstallLocation.TrimEnd('\') -eq $installed) 'Wrong install location'
     }
     Run-Installer (Join-Path $installed 'unins000.exe') @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')

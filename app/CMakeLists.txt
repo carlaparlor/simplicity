@@ -1,4 +1,5 @@
-add_executable(simplicity main.cpp)
-target_link_libraries(simplicity PRIVATE simplicity_juce_adapter)
+add_executable(simplicity WIN32 main.cpp)
+target_link_libraries(simplicity PRIVATE simplicity_gui)
 simplicity_strict(simplicity)
-add_test(NAME juce_bootstrap COMMAND simplicity)
+add_test(NAME gui_application COMMAND simplicity --smoke-test --report ${CMAKE_CURRENT_BINARY_DIR}/gui-report.json)
+set_tests_properties(gui_application PROPERTIES TIMEOUT 60)

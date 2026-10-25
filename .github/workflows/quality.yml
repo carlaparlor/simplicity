@@ -43,7 +43,20 @@ jobs:
         if: always()
         with:
           name: tests-windows-${{ matrix.config }}
-          path: build/windows/Testing/Temporary/
+          path: |
+            build/windows/Testing/Temporary/
+            build/windows/screenshots/
+            build/windows/app/gui-report.json
+      - name: Inspect actual GUI screenshot evidence
+        if: matrix.config == 'Release'
+        shell: python
+        run: |
+          import base64
+          from pathlib import Path
+          data = base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode()
+          chunks = [data[i:i+24000] for i in range(0,len(data),24000)]
+          for i, chunk in enumerate(chunks):
+              print(f'::notice title=GUI screenshot {i+1}/{len(chunks)}::{chunk}')
   sanitizers:
     name: Internal analysis — ASan and UBSan
     runs-on: ubuntu-latest

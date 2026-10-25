@@ -14,7 +14,7 @@ setup.cmd -NoInstall -Configuration Debug
 
 Without `-NoInstall`, setup installs missing developer prerequisites through
 winget. Both commands configure the real JUCE-enabled MSVC x64 preset, build, and
-run CTest including policy tests. No developer command prompt is needed. CI uses
+run CTest including policy, sketch-state, native GUI control/render and GUI process tests. No developer command prompt is needed. CI uses
 the same command, not a separate bypass. Windows PowerShell 5.1 tests parse the
 scripts and verify native/cmd failure propagation and NoInstall behavior.
 
@@ -54,8 +54,11 @@ gcovr --root . --filter 'modules/' --exclude-unreachable-branches --exclude-thro
   --xml-pretty --output build-coverage/coverage.xml build-coverage
 ```
 
-Thresholds apply to **all first-party modules**, including JUCE adapter and SDK
-headers, not upstream JUCE, the bootstrap or test harnesses. They do not prove
+Thresholds apply to **all compiled first-party domain/adapter/shell modules**,
+including JUCE adapter and SDK headers, not upstream JUCE or test harnesses. The
+Windows-only GUI is not compiled by internal Linux analysis and is explicitly
+outside those coverage totals; its real control/render/process tests are required
+on Windows Debug/Release (ADR 0003). Existing thresholds have not been lowered. They do not prove
 correctness. CI uploads coverage XML and native CTest logs even on test failure.
 The Python architecture policy suite includes mutation and change-evidence tests;
 it is not included in the C++ coverage percentage.
@@ -73,11 +76,14 @@ it is not included in the C++ coverage percentage.
 - architecture: valid repository plus deliberate forbidden dependency, cycle,
   bypass, missing-doc/test and change-evidence mutations.
 
-## User acceptance for this foundation
+## GUI suites / user acceptance
 
-Use the Windows preset/setup command, then install the prepared package or run
-the portable launcher. Expected: readiness text
-and exit code 0; there is intentionally no window or audible playback. Ask for
-any desired next DAW feature or report compiler/test failures with OS, command,
-logs and reproduction. Human audio, GUI, devices, latency, persistence, extension
-loading, race detection and hostile plugin isolation are **not tested/implemented**.
+Windows adds `workspace_test`, `gui_controls_and_render` and `gui_application`.
+The render test writes a real JUCE PNG; native process smoke mode validates the
+same controls and produces a JSON report with a CI timeout. Installer and portable
+lifecycle tests run that native process from installed/extracted paths, verify the
+shortcut targets the GUI executable directly and still test static runtime/privileges.
+Native rendering tests exercise state binding and three sizes, not complete pointer,
+DPI or assistive-technology correctness. Read [GUI guide](gui-shell.md) for the
+manual acceptance checklist and actual feature limits. No audio, media, saving,
+recording, timing/device safety or plugin compatibility is implied by GUI success.

@@ -1,10 +1,12 @@
 # Simplicity
 
-A **Windows-only C++20 / JUCE digital audio workstation**, being built from a tested,
-modular foundation. This repository currently contains an audio configuration
-contract, gain-processing engine, C extension ABI descriptor, JUCE buffer adapter,
-and a **headless bootstrap**. There is no editor, audio-device playback, recording,
-sequencer, project format, plugin loader or complete DAW yet.
+A **Windows-only C++20 / JUCE digital audio workstation**, now with a native dark,
+blocky **GUI shell**. Familiar DAW layout: browser, transport, arrangement, track
+inspector and mixer. Reversible sketch editing keeps the first interactions simple.
+
+This is still a foundation: clips/levels/transport are in-memory **visual sketch
+state**, not real audio/MIDI. No sound, recording, plugins or project saving yet.
+See [the GUI guide and shortcuts](docs/gui-shell.md).
 
 ## Windows only — easiest way to test
 
@@ -19,8 +21,8 @@ runtime is needed to run a prepared Windows build.
    user, without an admin prompt, and adds a Start menu shortcut.
 
 Prefer no installation? Extract **Simplicity-Portable.zip** and double-click
-**Launch Simplicity.cmd**. The current preview prints a readiness message and
-keeps the console visible; there is deliberately no DAW window or playback yet.
+**simplicity.exe**. It opens the native workspace directly—no console or
+PowerShell launcher. The demo is illustrative; audio output is not connected.
 
 These are **unsigned development test artifacts**, not a public commercial
 release. SmartScreen can warn/block them; never disable security protections.
@@ -64,3 +66,5 @@ and unowned sources. CI also demands test/documentation evidence for code change
 Branch protection must require `Required gates`; see the workflow document for
 server setup and the current permission limitation. These checks enforce structural
 rules, not semantic correctness or protection against a malicious maintainer.
+
+GUI render evidence is available in Windows test artifacts under screenshots/.

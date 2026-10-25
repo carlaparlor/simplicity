@@ -7,11 +7,13 @@ Installing a newer preview replaces the previous one; user projects/settings mus
 never be stored in the install folder. No project/settings format exists yet.
 
 Portable: extract the complete ZIP into a writable folder, then double-click
-"Launch Simplicity.cmd". No installer, registry entries or developer tools needed.
+"simplicity.exe". No installer, registry entries or developer tools needed.
 Delete that extracted folder to remove the portable copy.
 
-Expected today: a console readiness message, not a DAW window or audible playback.
-The launcher keeps that message visible. This is not yet a usable workstation.
+Expected today: a native dark GUI workspace with a labelled demo sketch.
+Try New, + Track, + Sketch, clip dragging, undo, panel toggles and ? for shortcuts.
+The sketch is in-memory only: no audible output, recording, media or saving yet.
+Closing the application loses the sketch. This is not yet a production workstation.
 
 No compiler, JUCE setup, Python or Visual C++ runtime installation is required.
 Windows 10/11 x64 only. Native ARM64, Linux and macOS are not supported.
