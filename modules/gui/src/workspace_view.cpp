@@ -259,6 +259,10 @@ public:
     }
     void bind(juce::TextButton& button, ShellAction action, const juce::String& tip) { button.setTooltip(tip); button.onClick = [this, action] { owner.perform(action); }; }
     void filterStarters() { const auto q = search.getText().trim(); starter.setVisible(showBrowser && juce::String("Empty track").containsIgnoreCase(q)); patterned.setVisible(showBrowser && juce::String("Track + sketch").containsIgnoreCase(q)); owner.repaint(); }
+    void wireShortcuts(juce::Component& component) {
+        component.addKeyListener(&owner);
+        for (int n = 0; n < component.getNumChildComponents(); ++n) wireShortcuts(*component.getChildComponent(n));
+    }
     void refresh() {
         title.setText(model.title(), juce::dontSendNotification);
         if (!tempo.hasKeyboardFocus(true)) tempo.setText(juce::String(model.bpm(), 0), false);
@@ -274,7 +278,7 @@ public:
         headers.refresh();
         if (channels.size() != static_cast<int>(model.tracks().size())) { channels.clear(); for (int i = 0; i < static_cast<int>(model.tracks().size()); ++i) { auto* c = channels.add(new Channel(model, i)); c->changed = [this] { refresh(); }; mixerContent.addAndMakeVisible(c); } }
         for (auto* c : channels) c->refresh();
-        updatePosition(); owner.resized(); owner.repaint(); canvas.repaint();
+        wireShortcuts(owner); updatePosition(); owner.resized(); owner.repaint(); canvas.repaint();
     }
     void updatePosition() { const double p = model.position(); position.setText(number(static_cast<int>(p) / 4 + 1) + " : " + number(static_cast<int>(p) % 4 + 1) + " : " + number(static_cast<int>((p - std::floor(p)) * 100)), juce::dontSendNotification); }
     void timerCallback() override {
@@ -411,6 +415,11 @@ bool WorkspaceView::keyPressed(const juce::KeyPress& key) {
     }
     return true;
 }
+bool WorkspaceView::keyPressed(const juce::KeyPress& key, juce::Component* source) {
+    // Preserve Enter activation on focused native controls; Space/commands remain global.
+    if (key.getKeyCode() == juce::KeyPress::returnKey && source != this) return false;
+    return keyPressed(key);
+}
 juce::String WorkspaceView::runSmokeTest() {
     auto& i = *impl_;
     auto click = [this](const char* id) { auto* b = dynamic_cast<juce::TextButton*>(findChildWithID(id)); if (b == nullptr || !b->isEnabled()) return false; b->onClick(); return true; };
@@ -423,8 +432,8 @@ juce::String WorkspaceView::runSmokeTest() {
     if (!click("mute") || !i.model.tracks()[0].muted || !click("solo") || !i.model.tracks()[0].solo) return "Mute/solo controls failed";
     i.level.setValue(-12, juce::sendNotificationSync); if (i.model.tracks()[0].level != -12) return "Level control failed";
     i.snap.setSelectedId(1, juce::sendNotificationSync); if (i.model.grid != 4) return "Snap control failed";
-    i.search.setText("nonexistent", true); if (i.starter.isVisible() || i.patterned.isVisible()) return "Browser filter failed";
-    i.search.clear();
+    i.search.setText("nonexistent", false); i.search.onTextChange(); if (i.starter.isVisible() || i.patterned.isVisible()) return "Browser filter failed";
+    i.search.setText({}, false); i.search.onTextChange();
     if (!keyPressed(juce::KeyPress('B')) || i.showBrowser || !keyPressed(juce::KeyPress('B')) || !i.showBrowser) return "Browser shortcut failed";
     perform(ShellAction::mixer); if (i.mixerView.isVisible()) return "Mixer toggle failed"; perform(ShellAction::mixer);
     perform(ShellAction::inspector); if (i.trackName.isVisible()) return "Inspector toggle failed"; perform(ShellAction::inspector);
@@ -435,6 +444,20 @@ juce::String WorkspaceView::runSmokeTest() {
         if (i.lanes.getWidth() < 400 || i.lanes.getHeight() < 200 || !getLocalBounds().contains(i.inspectorArea) || i.addTrack.getBounds().intersects(i.zoomOut.getBounds())) return "Responsive layout failed";
         auto image = createComponentSnapshot(getLocalBounds()); if (!image.isValid()) return "Component render failed";
     }
+    perform(ShellAction::demo);
+    // Feed the same JUCE mouse handlers used by real clip gestures.
+    const auto firstId = i.model.tracks()[0].clips[0].id;
+    const auto down = i.canvas.clipBounds(i.model.tracks()[0].clips[0], 0).getCentre();
+    auto eventAt = [&i, down](juce::Point<float> point) {
+        return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(), point,
+            juce::ModifierKeys::leftButtonModifier, 1.0F, 0, 0, 0, 0, &i.canvas, &i.canvas,
+            juce::Time::getCurrentTime(), down, juce::Time::getCurrentTime(), 1, true);
+    };
+    i.canvas.mouseDown(eventAt(down));
+    const auto destination = down.translated(static_cast<float>(4 * i.canvas.beatWidth), 0);
+    i.canvas.mouseDrag(eventAt(destination)); i.canvas.mouseUp(eventAt(destination));
+    if (i.model.clip(firstId)->beat != 4 || i.model.selectedClip() != firstId) return "Clip drag binding failed";
+    perform(ShellAction::undo); if (i.model.clip(firstId)->beat != 0) return "Clip drag undo failed";
     perform(ShellAction::demo); i.search.clear(); i.snap.setSelectedId(3, juce::sendNotificationSync); i.zoom = 1; setSize(1440, 900); i.refresh();
     return {};
 }

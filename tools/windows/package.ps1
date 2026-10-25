@@ -5,8 +5,13 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 function Invoke-Checked {
     param([string]$Executable, [string[]]$Arguments)
-    & $Executable @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Executable failed (exit $LASTEXITCODE)" }
+    $savedPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $output = & $Executable @Arguments 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $savedPreference
+    $output | ForEach-Object { Write-Host $_ }
+    if ($code -ne 0) { throw "$Executable failed (exit $code). $((@($output) | Select-Object -Last 30) -join "`n")" }
 }
 try {
     $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -37,6 +42,6 @@ try {
     exit 0
 } catch {
     Write-Host "PACKAGING FAILED: $($_.Exception.Message)" -ForegroundColor Red
-    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host "::error::PACKAGING FAILED: $($_.Exception.Message)" }
+    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host ("::error::PACKAGING FAILED: " + $_.Exception.Message.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')) }
     exit 1
 }
