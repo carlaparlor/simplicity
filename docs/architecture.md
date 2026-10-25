@@ -99,3 +99,12 @@ browser or juceaide tool is required. Only Windows product builds include the GU
 Internal analysis retains domain/shell/adapter coverage and sanitizers, not rendering
 coverage. Required Windows tests exercise real controls, image render, native GUI
 process launch and installed/portable lifecycle. UI timers never schedule audio.
+
+### GUI style and navigation
+
+The GUI composition root delegates neutral tokens/font/vector glyphs and native
+LookAndFeel to ui_style, and real track/template navigation/filtering/scrolling to
+BrowserPanel. Both remain in the existing GUI module: no new dependency edge,
+GUI-to-engine coupling or broad architecture exception. The inspector has been
+removed. Generated icon art is shared by the RC executable resource and runtime
+window; its deterministic stdlib generator and byte-level tests own regeneration.

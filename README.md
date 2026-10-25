@@ -1,8 +1,10 @@
 # Simplicity
 
 A **Windows-only C++20 / JUCE digital audio workstation**, now with a native dark,
-blocky **GUI shell**. Familiar DAW layout: browser, transport, arrangement, track
-inspector and mixer. Reversible sketch editing keeps the first interactions simple.
+minimal **GUI shell**: compact transport, searchable session/template browser,
+arrangement and mixer. Grayscale controls, subtle corners and Segoe UI keep the
+workspace quiet; only tracks and clips carry colour. Reversible sketch editing
+keeps the first interactions simple.
 
 This is still a foundation: clips/levels/transport are in-memory **visual sketch
 state**, not real audio/MIDI. No sound, recording, plugins or project saving yet.

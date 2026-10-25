@@ -1,11 +1,14 @@
 #include <simplicity/workspace_view.h>
+#include <simplicity/application_icon.h>
+#include <simplicity/ui_style.h>
 #include <algorithm>
 
 namespace {
 class Window final : public juce::DocumentWindow {
 public:
-    Window() : DocumentWindow("simplicity", juce::Colour{0xff111315}, allButtons) {
+    Window() : DocumentWindow("Simplicity", simplicity::ui::background, allButtons) {
         setUsingNativeTitleBar(false);
+        setIcon(juce::ImageFileFormat::loadFrom(simplicity::applicationIconPng, sizeof(simplicity::applicationIconPng)));
         auto* workspace = new simplicity::WorkspaceView();
         setContentOwned(workspace, true); setLookAndFeel(&workspace->getLookAndFeel());
         setTitleBarHeight(26); setResizable(true, false); setResizeLimits(1080, 666, 3840, 2160);

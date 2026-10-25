@@ -1,0 +1,3 @@
+# Generated assets must be identical on every host.
+app/assets/simplicity.ico binary
+modules/gui/include/simplicity/application_icon.h text eol=lf

@@ -1,4 +1,7 @@
-add_executable(simplicity WIN32 main.cpp)
+enable_language(RC)
+set(SIMPLICITY_ICON "${CMAKE_CURRENT_SOURCE_DIR}/assets/simplicity.ico")
+configure_file(resources.rc.in ${CMAKE_CURRENT_BINARY_DIR}/resources.rc @ONLY)
+add_executable(simplicity WIN32 main.cpp ${CMAKE_CURRENT_BINARY_DIR}/resources.rc)
 target_link_libraries(simplicity PRIVATE simplicity_gui)
 simplicity_strict(simplicity)
 add_test(NAME gui_application COMMAND simplicity --smoke-test --report ${CMAKE_CURRENT_BINARY_DIR}/gui-report.json)

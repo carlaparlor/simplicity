@@ -12,6 +12,25 @@ function Run-Installer([string]$File, [string[]]$Arguments) {
     $process = Start-Process -FilePath $File -ArgumentList $Arguments -Wait -PassThru
     Assert-True ($process.ExitCode -eq 0) "Installer failed: $File ($($process.ExitCode))"
 }
+function Test-AppIcon([string]$Exe) {
+    Add-Type -AssemblyName System.Drawing
+    $icon = [Drawing.Icon]::ExtractAssociatedIcon($Exe)
+    Assert-True ($null -ne $icon) 'Compiled application icon missing'
+    $bitmap = $icon.ToBitmap()
+    try {
+        $grey = 0; $ink = 0
+        for ($y = 0; $y -lt $bitmap.Height; $y++) {
+            for ($x = 0; $x -lt $bitmap.Width; $x++) {
+                $pixel = $bitmap.GetPixel($x, $y)
+                if ($pixel.A -eq 0) { continue }
+                Assert-True ($pixel.R -eq $pixel.G -and $pixel.G -eq $pixel.B) 'Executable icon must be grayscale'
+                if ($pixel.R -eq 91) { $grey++ }
+                if ($pixel.R -eq 238) { $ink++ }
+            }
+        }
+        Assert-True ($grey -gt ($bitmap.Width * $bitmap.Height / 2) -and $ink -gt 10) 'Executable does not contain the generated s icon'
+    } finally { $bitmap.Dispose(); $icon.Dispose() }
+}
 function Test-Bootstrap([string]$Exe) {
     $report = Join-Path ([IO.Path]::GetTempPath()) ('simplicity-gui-' + [guid]::NewGuid() + '.json')
     try {
@@ -55,6 +74,7 @@ try {
     foreach ($file in @('simplicity.exe', 'README.txt', 'notices/JUCE-LICENSE.md', 'notices/dependencies.md')) {
         Assert-True (Test-Path (Join-Path $portable $file)) "Missing portable file: $file"
     }
+    Test-AppIcon (Join-Path $portable 'simplicity.exe')
     Test-Bootstrap (Join-Path $portable 'simplicity.exe')
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     $vs = & $vswhere -latest -products '*' -version '[17.0,18.0)' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -65,6 +85,7 @@ try {
     Assert-True ($dependencies -notmatch '(?i)(VCRUNTIME|MSVCP\d|MSVCR\d)') 'Executable needs a separately installed MSVC runtime'
     foreach ($attempt in 1..2) {
         Run-Installer $installer @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=`"$installed`"")
+        Test-AppIcon (Join-Path $installed 'simplicity.exe')
         Test-Bootstrap (Join-Path $installed 'simplicity.exe')
         Assert-True (Test-Path $key) 'Per-user uninstaller registration missing'
         Assert-True (Test-Path $shortcut) 'Start menu shortcut missing'
@@ -80,7 +101,7 @@ try {
     Assert-True (-not (Test-Path $key)) 'Uninstall registry entry left behind'
     Assert-True (-not (Test-Path $shortcut)) 'Start menu shortcut left behind'
     Test-Bootstrap (Join-Path $portable 'simplicity.exe') # installer removal must not affect portable copy
-    Write-Host 'PASS: checksums, asInvoker, static runtime, portable launch, per-user install/reinstall, uninstall.'
+    Write-Host 'PASS: compiled grayscale app icon, checksums, asInvoker, static runtime, portable launch, per-user install/reinstall, uninstall.'
 } finally {
     if (Test-Path (Join-Path $installed 'unins000.exe')) {
         Run-Installer (Join-Path $installed 'unins000.exe') @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')

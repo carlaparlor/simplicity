@@ -94,6 +94,10 @@ class ArchitectureTests(PolicyFixture):
         self.write("misc/rogue.cpp", "int rogue;\n")
         self.rejected("Unowned source")
 
+    def test_new_gui_source_requires_explicit_registration(self):
+        self.write("modules/gui/src/unregistered_style.cpp", "// Must not be silently globbed.\n")
+        self.rejected("CMake must match")
+
     def test_unlisted_source(self):
         self.write("modules/core/src/extra.cpp", "int extra;\n")
         self.rejected("CMake must match")
