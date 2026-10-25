@@ -47,36 +47,6 @@ jobs:
             build/windows/Testing/Temporary/
             build/windows/screenshots/
             build/windows/app/gui-report.json
-      - name: Inspect actual GUI screenshot evidence (1-10)
-        if: matrix.config == 'Release'
-        shell: python
-        run: |
-          import base64
-          from pathlib import Path
-          data = base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode()
-          chunks = [data[i:i+3800] for i in range(0,len(data),3800)]
-          for i, chunk in list(enumerate(chunks))[0:10]:
-              print(f'::notice title=GUI screenshot {i+1}/{len(chunks)}::{chunk}')
-      - name: Inspect actual GUI screenshot evidence (11-20)
-        if: matrix.config == 'Release'
-        shell: python
-        run: |
-          import base64
-          from pathlib import Path
-          data = base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode()
-          chunks = [data[i:i+3800] for i in range(0,len(data),3800)]
-          for i, chunk in list(enumerate(chunks))[10:20]:
-              print(f'::notice title=GUI screenshot {i+1}/{len(chunks)}::{chunk}')
-      - name: Inspect actual GUI screenshot evidence (21-30)
-        if: matrix.config == 'Release'
-        shell: python
-        run: |
-          import base64
-          from pathlib import Path
-          data = base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode()
-          chunks = [data[i:i+3800] for i in range(0,len(data),3800)]
-          for i, chunk in list(enumerate(chunks))[20:30]:
-              print(f'::notice title=GUI screenshot {i+1}/{len(chunks)}::{chunk}')
   sanitizers:
     name: Internal analysis — ASan and UBSan
     runs-on: ubuntu-latest

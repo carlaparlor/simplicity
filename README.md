@@ -8,6 +8,8 @@ This is still a foundation: clips/levels/transport are in-memory **visual sketch
 state**, not real audio/MIDI. No sound, recording, plugins or project saving yet.
 See [the GUI guide and shortcuts](docs/gui-shell.md).
 
+![Actual Windows JUCE workspace render](docs/images/workspace.png)
+
 ## Windows only — easiest way to test
 
 **Supported target: Windows 10/11 x64.** Linux/macOS and native ARM64 are not

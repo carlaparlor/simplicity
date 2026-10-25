@@ -24,6 +24,8 @@ replaces console pause launcher; installer/portable/shortcuts launch it directly
   GUI smoke reports. All seven gates passed there. Final-head gates still required.
 - Upgrade fixture checks retirement of the known legacy console wrapper; no
   arbitrary user files are deleted.
+- Actual Windows Release JUCE render visually reviewed; captured in
+  docs/images/workspace.png (not an AI mockup/web recreation).
 - Own GUI/app/test source passes GCC syntax checks against actual pinned JUCE headers.
 - Actual Windows build/render/control/native launch/installer results recorded on PR
   after execution, not inferred from Linux. Screenshots are actual JUCE renders.
