@@ -20,7 +20,7 @@ scripts and verify native/cmd failure propagation and NoInstall behavior.
 
 The separate required package job runs `tools/windows/package.ps1`, then
 `tests/windows/installer_test.ps1`: hashes, compiled asInvoker manifest, absence of
-separate MSVC runtime imports, portable launch, actual silent install/reinstall,
+separate MSVC runtime imports, compiled grayscale executable icon, portable launch, actual silent install/reinstall,
 Start menu/HKCU registration, installed launch and full uninstall, using spaced
 paths with `&`. The runner is elevated; manual standard-user desktop/security
 prompt testing remains essential. See [Windows setup](windows-setup.md).
@@ -87,3 +87,19 @@ Native rendering tests exercise state binding and three sizes, not complete poin
 DPI or assistive-technology correctness. Read [GUI guide](gui-shell.md) for the
 manual acceptance checklist and actual feature limits. No audio, media, saving,
 recording, timing/device safety or plugin compatibility is implied by GUI success.
+
+## Grayscale redesign regressions
+
+`tests/test_app_icon.py` checks all seven ICO directory frames, PNG signatures,
+chunk lengths/CRCs, size/format, neutral pixels and antialiased corners, exact
+runtime/resource PNG byte parity and exact decoded-pixel regeneration. PNG
+compression bytes may differ across zlib/zlib-ng versions; local repeat generation
+is byte-identical, and a fixed pixel digest guards the artwork independently. Regenerate
+with `python tools/assets/make_app_icon.py`; no image/font libraries are needed.
+Windows installer tests extract the actual packaged EXE icon with System.Drawing,
+not merely inspect the RC source, and require the gray background/white glyph.
+GUI tests render all vector glyphs, neutral normal/active buttons and toolbar;
+assert the 62 px toolbar, arrangement right edge/minimum width, removed I shortcut,
+inline rename, dB edits, searchable tab navigation/templates, 24-track cap, browser
+scrolling, deletion/undo synchronization, help, transport and clip dragging/undo.
+Snapshots remain real native JUCE renders, not design mockups.
