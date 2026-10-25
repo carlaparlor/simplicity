@@ -1,0 +1,2 @@
+add_library(simplicity_sdk INTERFACE)
+target_include_directories(simplicity_sdk INTERFACE include)
