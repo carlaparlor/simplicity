@@ -5,7 +5,8 @@
 Windows 10/11 **x64** only. Native ARM64 is not supported; do not rely on emulation
 as a tested target. Windows 10 may be outside Microsoft's standard support;
 Windows 11 is recommended. No macOS/Linux installer or product support.
-The current application is a headless engine bootstrap, not yet a DAW editor.
+The current application is a native GUI workspace shell; audio, recording and
+project persistence are not implemented yet.
 
 The goal is download → install → launch, with no toolchain, JUCE account, Python,
 PATH editing or separate Visual C++ runtime installation for end users. The
@@ -31,11 +32,12 @@ installer are follow-up work after the owner confirms licensing/signing.
    elevation or machine-wide install is needed. Silent install is supported:
    `Simplicity-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART`.
 4. Alternatively extract `Simplicity-Portable.zip` into a writable folder and run
-   `Launch Simplicity.cmd`. The launcher keeps the current console result visible.
+   `simplicity.exe`. It opens the native GUI directly with no console.
 
-Expected now: `Simplicity: C++/JUCE engine bootstrap ready (no DAW UI yet).`
-No GUI/audio playback exists. If it fails, retain the exit/error text and artifact
-commit. Start menu/portable launch pauses so failures don't disappear immediately.
+Expected now: a dark workspace with transport, browser, arrangement, inspector
+and mixer. Demo clips are illustrative; no sound/recording/project saving exists.
+Use ? for shortcuts and preview limitations. If launch fails, retain the artifact
+commit and Windows error/crash details. Test mode produces explicit JSON reports.
 
 Reinstall a newer preview to the same folder; its stable application ID replaces
 the previous installation. There is no updater or rollback automation. Do not store

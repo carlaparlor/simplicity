@@ -1,7 +1,7 @@
 # Mandatory working agreement — Simplicity
 
 Simplicity is a **C++20 / JUCE digital audio workstation**. Never silently replace
-its native stack with a web app or present the bootstrap as a finished DAW.
+its native stack with a web app or present the GUI shell as a finished DAW.
 **Windows 10/11 x64 only for now.** Keep installation low-friction: per-user/no-admin
 installer, portable ZIP, no end-user development tools/runtime setup, and a
 one-command developer bootstrap. Do not add macOS/Linux product work. Linux is
@@ -40,3 +40,7 @@ at that boundary. Instructions are not a substitute for server-side protection.
   and explicit rationale when genuinely necessary. Do not weaken existing gates.
 - Small cohesive modules, explicit sources/dependencies, pinned third parties,
   no speculative framework, and no undocumented functionality.
+
+The current GUI is an explicitly labelled, in-memory sketch shell (docs/gui-shell.md).
+Keep GUI -> shell separate from audio modules; never fabricate audio meter activity,
+recording or successful saves. New UI behavior requires Windows control/render tests.

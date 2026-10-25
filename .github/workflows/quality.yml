@@ -43,7 +43,10 @@ jobs:
         if: always()
         with:
           name: tests-windows-${{ matrix.config }}
-          path: build/windows/Testing/Temporary/
+          path: |
+            build/windows/Testing/Temporary/
+            build/windows/screenshots/
+            build/windows/app/gui-report.json
   sanitizers:
     name: Internal analysis — ASan and UBSan
     runs-on: ubuntu-latest

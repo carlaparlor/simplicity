@@ -1,0 +1,4 @@
+add_library(simplicity_gui STATIC src/workspace_view.cpp)
+target_include_directories(simplicity_gui PUBLIC include)
+target_link_libraries(simplicity_gui PUBLIC simplicity_shell simplicity::juce_gui)
+simplicity_strict(simplicity_gui)

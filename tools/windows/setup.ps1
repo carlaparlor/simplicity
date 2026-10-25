@@ -6,8 +6,13 @@ Set-StrictMode -Version Latest
 
 function Invoke-Checked {
     param([string]$Executable, [string[]]$Arguments)
-    & $Executable @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Executable failed (exit $LASTEXITCODE). See the output above." }
+    $savedPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $output = & $Executable @Arguments 2>&1
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $savedPreference
+    $output | ForEach-Object { Write-Host $_ }
+    if ($code -ne 0) { throw "$Executable failed (exit $code). $((@($output) | Select-Object -Last 30) -join "`n")" }
 }
 function Update-Path {
     $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
@@ -72,11 +77,11 @@ try {
     Invoke-Checked 'cmake.exe' @('--build', '--preset', $preset)
     Invoke-Checked 'ctest.exe' @('--preset', $preset)
     Write-Host "Ready: $root\build\windows\app\$Configuration\simplicity.exe"
-    Write-Host 'This is currently a headless bootstrap, not a complete DAW.'
+    Write-Host 'Native GUI shell ready. Audio/recording/project saving are not implemented yet.'
     exit 0
 } catch {
     Write-Host "SETUP FAILED: $($_.Exception.Message)" -ForegroundColor Red
-    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host "::error::SETUP FAILED: $($_.Exception.Message)" }
+    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host ("::error::SETUP FAILED: " + $_.Exception.Message.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')) }
     Write-Host 'Fix the reported prerequisite and re-run setup.cmd. Troubleshooting: docs/windows-setup.md'
     exit 1
 }

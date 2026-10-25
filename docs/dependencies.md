@@ -8,10 +8,12 @@
 - End users: Windows 10/11 x64; no developer tools or extra MSVC redistributable.
   Windows' built-in system libraries are still required.
 - JUCE **8.0.12**, commit `29396c22c93392d6738e021b83196283d6e4d850`:
-  fetched by CMake from https://github.com/juce-framework/JUCE . Only
-  `juce_audio_basics` and its transitive `juce_core` dependency are used here.
-  CMake registers only these two modules with the upstream module API, avoiding
-  configuration of unrelated GUI/device modules. Browser and CURL features are disabled; no GUI/device SDK is needed yet.
+  fetched by CMake from https://github.com/juce-framework/JUCE . The DSP adapter
+  uses `juce_audio_basics`/`juce_core`; Windows UI additionally uses
+  `juce_gui_basics`, `juce_graphics`, `juce_events` and `juce_data_structures`.
+  CMake registers only required modules with the upstream module API, avoiding
+  unrelated device modules and the juceaide build helper. Windows uses the system
+  SDK/DirectWrite for native UI; no browser/WebView2 or runtime framework is added. Browser and CURL features are disabled; no GUI/device SDK is needed yet.
 - gcovr and its pinned dependencies: coverage tooling only.
 - GitHub Actions references are pinned to commits; upgrades are deliberate PRs.
 
