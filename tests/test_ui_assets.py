@@ -32,6 +32,8 @@ class UIAssetsTests(unittest.TestCase):
             self.assertEqual(svg.attrib['stroke-width'],'2')
             self.assertEqual(svg.attrib['stroke'],'currentColor')
             self.assertEqual(svg.attrib['stroke-linecap'],'round')
+            self.assertEqual(svg.attrib['stroke-linejoin'],'round')
+            self.assertEqual(svg.attrib['fill'],'none')
         self.assertIn('ISC License',(root/'lucide/LICENSE').read_text())
         self.assertIn('Cole Bemis',(root/'lucide/LICENSE').read_text())
 

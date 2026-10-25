@@ -7,15 +7,15 @@ namespace simplicity::ui {
 static_assert(std::size(data::lucide)==static_cast<std::size_t>(Glyph::maximize));
 class Resources final {
 public:
-    struct Icon { std::unique_ptr<juce::Drawable> image; juce::Colour tint{juce::Colours::white}; };
     juce::Typeface::Ptr face{juce::Typeface::createSystemTypefaceFor(data::retrobyte, sizeof(data::retrobyte))};
-    std::array<Icon, std::size(data::lucide)> icons;
+    std::array<juce::Path, std::size(data::lucide)> icons;
     Resources() {
         jassert(face != nullptr);
         for (std::size_t n=0; n<icons.size(); ++n) {
             const auto svg = juce::String(data::lucide[n]).replace("currentColor", "#ffffff");
-            if (auto xml = juce::XmlDocument::parse(svg)) icons[n].image = juce::Drawable::createFromSVG(*xml);
-            jassert(icons[n].image != nullptr);
+            if (auto xml = juce::XmlDocument::parse(svg))
+                if (auto drawable = juce::Drawable::createFromSVG(*xml)) icons[n] = drawable->getOutlineAsPath();
+            jassert(!icons[n].isEmpty());
         }
     }
 };
@@ -33,9 +33,10 @@ void glyph(juce::Graphics& g, Glyph kind, juce::Rectangle<float> bounds, juce::C
     const int index=static_cast<int>(kind)-1;
     if (index<0 || index>=static_cast<int>(std::size(data::lucide)) || bounds.isEmpty()) return;
     auto assets=resources(); auto& icon=assets->icons[static_cast<std::size_t>(index)];
-    if (!icon.image) return;
-    icon.image->replaceColour(icon.tint,colour); icon.tint=colour;
-    // Keep the complete Lucide 24x24 viewBox, including its standard padding/stroke.
-    icon.image->draw(g,1.0F,juce::RectanglePlacement(juce::RectanglePlacement::centred).getTransformToFit(juce::Rectangle<float>{0,0,24,24},bounds));
+    if (icon.isEmpty()) return;
+    // Native SVG parser supplies exact stroked outlines in SVG coordinates, not
+    // Drawable component ink bounds/origin. Tint only at paint time; no mutable tint.
+    g.setColour(colour);
+    g.fillPath(icon,juce::RectanglePlacement(juce::RectanglePlacement::centred).getTransformToFit(juce::Rectangle<float>{0,0,24,24},bounds));
 }
 }

@@ -10,8 +10,8 @@ notices are retained. RetroByte's personal-use restriction remains explicitly
 unresolved; no commercial/public release permission is inferred or granted.
 
 Keep GUI -> shell boundaries unchanged. ui_assets owns a message-thread shared
-native SVG/typeface cache, held for the Look lifetime; a weak registry prevents
-process-static GUI objects surviving JUCE shutdown. Assets compile into C++ data:
+native SVG-stroke-path/typeface cache, held for the Look lifetime; a weak registry prevents process-static ownership; native SVG Drawables are
+converted to immutable stroked paths then immediately destroyed. Assets compile into C++ data:
 no OS font installation, runtime network or Node dependency. No synthetic bold:
 the provided typeface is Medium. Font-derived icon generation reads the pinned
 TTF s polygons directly and fails on unsupported shapes instead of approximating.
