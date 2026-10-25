@@ -1,0 +1,5 @@
+add_library(simplicity_juce_adapter STATIC src/juce_adapter.cpp)
+target_include_directories(simplicity_juce_adapter PUBLIC include)
+target_link_libraries(simplicity_juce_adapter PUBLIC simplicity_engine juce::juce_audio_basics)
+target_compile_definitions(simplicity_juce_adapter PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+simplicity_strict(simplicity_juce_adapter)

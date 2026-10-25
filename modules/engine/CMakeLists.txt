@@ -1,0 +1,4 @@
+add_library(simplicity_engine STATIC src/engine.cpp)
+target_include_directories(simplicity_engine PUBLIC include)
+target_link_libraries(simplicity_engine PUBLIC simplicity_core)
+simplicity_strict(simplicity_engine)
