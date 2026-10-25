@@ -138,6 +138,8 @@ def validate(root: Path) -> list[str]:
                     elif include.startswith("juce_"):
                         if owner not in {"juce_adapter", "gui", "app", "tests"}:
                             errors.append(f"{relative}: JUCE may not leak into domain modules")
+                        elif owner == "gui" and include != "juce_gui_basics/juce_gui_basics.h":
+                            errors.append(f"{relative}: undeclared JUCE family in GUI module")
                     elif "/" in include and include != "sys/types.h":
                         errors.append(f"{relative}: unregistered include {include}")
                     elif include.endswith((".h", ".hpp")) and include not in {

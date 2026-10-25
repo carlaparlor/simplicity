@@ -190,6 +190,10 @@ class ArchitectureTests(PolicyFixture):
         self.write("modules/shell/src/workspace.cpp", "#include <juce_gui_basics/juce_gui_basics.h>\n")
         self.rejected("JUCE may not leak")
 
+    def test_gui_cannot_smuggle_audio_dependency(self):
+        self.write("modules/gui/src/workspace_view.cpp", "#include <juce_audio_basics/juce_audio_basics.h>\n")
+        self.rejected("undeclared JUCE family")
+
     def test_engine_cannot_include_gui(self):
         self.write("modules/engine/src/engine.cpp", "#include <simplicity/workspace_view.h>\n")
         self.rejected("undeclared dependency")

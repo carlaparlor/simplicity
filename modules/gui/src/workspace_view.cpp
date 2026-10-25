@@ -20,7 +20,7 @@ public:
     explicit WindowButton(int type) : Button(type == juce::DocumentWindow::closeButton ? "Close" : type == juce::DocumentWindow::minimiseButton ? "Minimize" : "Maximize or restore"), kind(type) { setTooltip(getName()); }
     void paintButton(juce::Graphics& g, bool over, bool down) override {
         g.fillAll(over ? (kind == juce::DocumentWindow::closeButton ? juce::Colour{0xffa54141} : line) : (down ? raised : bg));
-        g.setColour(ink); const float x = getWidth() * 0.5F, y = getHeight() * 0.5F;
+        g.setColour(ink); const float x = static_cast<float>(getWidth()) * 0.5F, y = static_cast<float>(getHeight()) * 0.5F;
         if (kind == juce::DocumentWindow::closeButton) { g.drawLine(x - 4, y - 4, x + 4, y + 4); g.drawLine(x - 4, y + 4, x + 4, y - 4); }
         else if (kind == juce::DocumentWindow::minimiseButton) g.drawLine(x - 4, y + 3, x + 4, y + 3);
         else g.drawRect(juce::Rectangle<float>{x - 4, y - 4, 8, 8});
@@ -38,6 +38,15 @@ public:
         setColour(juce::PopupMenu::highlightedTextColourId, accent); setColour(juce::Label::textColourId, ink);
         setColour(juce::ScrollBar::thumbColourId, line.brighter(0.25F));
         setColour(juce::ResizableWindow::backgroundColourId, bg);
+        setColour(juce::Slider::textBoxTextColourId, ink); setColour(juce::Slider::textBoxBackgroundColourId, bg);
+        setColour(juce::Slider::textBoxOutlineColourId, line); setColour(juce::TooltipWindow::backgroundColourId, raised);
+        setColour(juce::TooltipWindow::textColourId, ink); setColour(juce::TooltipWindow::outlineColourId, line);
+        setColour(juce::CaretComponent::caretColourId, accent);
+    }
+    void drawComboBox(juce::Graphics& g, int width, int height, bool, int, int, int, int, juce::ComboBox&) override {
+        g.fillAll(raised); g.setColour(line); g.drawRect(0, 0, width, height);
+        g.setColour(muted); const float x = static_cast<float>(width - 14), y = static_cast<float>(height) * 0.5F;
+        g.drawLine(x - 3, y - 2, x, y + 1); g.drawLine(x, y + 1, x + 3, y - 2);
     }
     juce::Button* createDocumentWindowButton(int type) override { return new WindowButton(type); }
     void drawDocumentWindowTitleBar(juce::DocumentWindow&, juce::Graphics& g, int width, int height,
@@ -408,6 +417,9 @@ void WorkspaceView::perform(ShellAction action) {
         case ShellAction::help: i.helpOpen = !i.helpOpen; break;
     }
     i.refresh();
+    if (action == ShellAction::help) {
+        if (i.helpOpen) i.helpPanel.close.grabKeyboardFocus(); else grabKeyboardFocus();
+    }
 }
 bool WorkspaceView::keyPressed(const juce::KeyPress& key) {
     if (dynamic_cast<juce::TextEditor*>(juce::Component::getCurrentlyFocusedComponent()) != nullptr) return false;
@@ -453,6 +465,9 @@ juce::String WorkspaceView::runSmokeTest() {
     i.snap.setSelectedId(1, juce::sendNotificationSync); if (i.model.grid != 4) return "Snap control failed";
     i.search.setText("nonexistent", false); i.search.onTextChange(); if (i.starter.isVisible() || i.patterned.isVisible()) return "Browser filter failed";
     i.search.setText({}, false); i.search.onTextChange();
+    i.search.grabKeyboardFocus();
+    if (keyPressed(juce::KeyPress(juce::KeyPress::spaceKey)) || i.model.playing()) return "Text editor shortcut isolation failed";
+    grabKeyboardFocus();
     if (!keyPressed(juce::KeyPress('B')) || i.showBrowser || !keyPressed(juce::KeyPress('B')) || !i.showBrowser) return "Browser shortcut failed";
     perform(ShellAction::mixer); if (i.mixerView.isVisible()) return "Mixer toggle failed"; perform(ShellAction::mixer);
     perform(ShellAction::inspector); if (i.trackName.isVisible()) return "Inspector toggle failed"; perform(ShellAction::inspector);
