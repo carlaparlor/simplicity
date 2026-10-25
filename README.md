@@ -1,30 +1,52 @@
 # Simplicity
 
-A native **C++20 / JUCE digital audio workstation**, being built from a tested,
+A **Windows-only C++20 / JUCE digital audio workstation**, being built from a tested,
 modular foundation. This repository currently contains an audio configuration
 contract, gain-processing engine, C extension ABI descriptor, JUCE buffer adapter,
 and a **headless bootstrap**. There is no editor, audio-device playback, recording,
 sequencer, project format, plugin loader or complete DAW yet.
 
-## Build and test
+## Windows only — easiest way to test
 
-Requires CMake 3.25+, a C++20 compiler, Python 3.11+, Git, and internet access on
-the first JUCE build. JUCE is fetched at an immutable 8.0.12 commit. Only headless
-modules are built, so Linux GUI/audio-device development libraries are not needed.
+**Supported target: Windows 10/11 x64.** Linux/macOS and native ARM64 are not
+supported product targets. No compiler, Python, JUCE setup or separate Visual C++
+runtime is needed to run a prepared Windows build.
 
-```sh
-python3 tools/check_architecture.py
-python3 -m unittest discover -s tests -p 'test_*.py' -v
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel 2
-ctest --test-dir build --output-on-failure
-# Linux/macOS; on Windows use build/app/Debug/simplicity.exe
-./build/app/simplicity
+1. Open a **successful** [Quality run on main](https://github.com/carlaparlor/simplicity/actions/workflows/quality.yml?query=branch%3Amain).
+2. Download **Simplicity-Windows-x64-development** from its Artifacts section
+   (GitHub sign-in required; artifacts are retained for 14 days).
+3. Extract that download and run **Simplicity-Setup.exe**. It installs for your
+   user, without an admin prompt, and adds a Start menu shortcut.
+
+Prefer no installation? Extract **Simplicity-Portable.zip** and double-click
+**Launch Simplicity.cmd**. The current preview prints a readiness message and
+keeps the console visible; there is deliberately no DAW window or playback yet.
+
+These are **unsigned development test artifacts**, not a public commercial
+release. SmartScreen can warn/block them; never disable security protections.
+Commercial licensing/distribution terms and code signing await owner confirmation.
+No public releases are automatically published. Checksums are included.
+See [Windows installation, troubleshooting and removal](docs/windows-setup.md).
+
+## Developing: one command
+
+Download/extract this source repository (or clone it), then double-click
+`setup.cmd`, or run it from a terminal:
+
+```bat
+setup.cmd
 ```
 
-Offline/core-only after installing toolchains:
-`cmake -S . -B build-core -DSIMPLICITY_WITH_JUCE=OFF` (not a substitute for JUCE CI).
-See [testing](docs/testing.md) for release, sanitizers and coverage commands.
+It finds/installs missing developer tools using winget, fetches pinned JUCE,
+configures Windows x64, builds Release and runs the tests. Tool installation may
+require internet, several GB, UAC consent and a restart; running Simplicity does
+not. Already have the tools? `setup.cmd -NoInstall`. Debug:
+`setup.cmd -Configuration Debug`. Failed commands stop with a nonzero exit code.
+The script never changes your system execution policy.
+
+[Windows setup](docs/windows-setup.md) lists prerequisites, manual presets and
+packaging commands. [Testing](docs/testing.md) documents all quality gates. Internal
+Linux analysis jobs exist solely for ASan/UBSan/coverage, not Linux distribution.
 
 ## Engineering contract
 

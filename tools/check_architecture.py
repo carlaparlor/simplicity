@@ -147,16 +147,39 @@ def validate(root: Path) -> list[str]:
         required_workflow_fragments = (
             "pull_request:", "contents: read", "fetch-depth: 0",
             'python3 tools/check_architecture.py --base "$BASE_SHA"',
-            "python3 -m unittest discover -s tests", "[ubuntu-latest, macos-latest, windows-latest]",
-            "config: [Debug, Release]", "-DSIMPLICITY_WITH_JUCE=ON",
+            "python3 -m unittest discover -s tests", "name: Windows x64 (${{ matrix.config }})",
+            "runs-on: windows-2022", "setup.cmd -NoInstall -Configuration ${{ matrix.config }}",
+            "config: [Debug, Release]", "-DSIMPLICITY_ANALYSIS_ONLY=ON",
+            "./tests/windows/installer_test.ps1", "Simplicity-Windows-x64-development",
             "-DSIMPLICITY_SANITIZERS=ON", "-DSIMPLICITY_COVERAGE=ON",
             "--fail-under-line 95 --fail-under-branch 90", "name: Required gates",
-            "needs: [policy, build, sanitizers, coverage]", "if: always()",
+            "needs: [policy, build, sanitizers, coverage, package]", "if: always()",
             "all(job['result'] == 'success' for job in results.values())",
         )
         for fragment in required_workflow_fragments:
             if fragment not in workflow:
                 errors.append(f"Required CI workflow contract missing: {fragment}")
+        if "macos-latest" in workflow or "os: [" in workflow:
+            errors.append("Product CI must target Windows only; Linux jobs are internal analysis")
+        windows_contract = {
+            "CMakeLists.txt": ("if(NOT WIN32 AND NOT SIMPLICITY_ANALYSIS_ONLY)",
+                               'set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")'),
+            "setup.cmd": ("-NoProfile -ExecutionPolicy Bypass", "exit /b %ERRORLEVEL%"),
+            "tools/windows/setup.ps1": ("$NoInstall", "--preset", "Find-VisualStudio", "ctest.exe"),
+            "packaging/windows/simplicity.iss": ("PrivilegesRequired=lowest", "DefaultDirName={localappdata}\\Programs\\Simplicity",
+                                                 "ArchitecturesAllowed=x64compatible", "MinVersion=10.0"),
+        }
+        for filename, fragments in windows_contract.items():
+            text = (root / filename).read_text()
+            for fragment in fragments:
+                if fragment not in text:
+                    errors.append(f"Windows setup contract missing in {filename}: {fragment}")
+        presets = json.loads((root / "CMakePresets.json").read_text())
+        windows = next(p for p in presets["configurePresets"] if p["name"] == "windows")
+        if (windows["architecture"] != "x64" or windows["generator"] != "Visual Studio 17 2022"
+                or windows["cacheVariables"].get("SIMPLICITY_WITH_JUCE") != "ON"
+                or windows["cacheVariables"].get("SIMPLICITY_ANALYSIS_ONLY") != "OFF"):
+            errors.append("Windows preset must select the supported x64/JUCE product toolchain")
         protection = json.loads((root / ".github/branch-protection.json").read_text())
         if (protection["required_status_checks"] != {"strict": True, "contexts": ["Required gates"]}
                 or protection["enforce_admins"] is not True
@@ -174,7 +197,7 @@ def validate(root: Path) -> list[str]:
             errors.append("Configure-time architecture gate missing")
         if "29396c22c93392d6738e021b83196283d6e4d850" not in cmake:
             errors.append("Pinned JUCE commit missing; dependency upgrades require policy update")
-    except (OSError, ValueError, KeyError, TypeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
         errors.append(f"Invalid architecture configuration: {error}")
     return errors
 
@@ -193,8 +216,8 @@ def validate_changes(root: Path, base: str) -> list[str]:
                 errors.append(f"{name}: production changes require corresponding test changes")
             if not any(path.startswith("docs/") for path in evidence):
                 errors.append(f"{name}: production changes require documentation changes")
-    production = any(path.startswith(("modules/", "app/", "tools/", "architecture/", ".github/workflows/"))
-                     or path == "CMakeLists.txt" for path in changed)
+    production = any(path.startswith(("modules/", "app/", "tools/", "architecture/", "packaging/", "cmake/", ".github/workflows/"))
+                     or path in {"CMakeLists.txt", "CMakePresets.json", "setup.cmd"} for path in changed)
     if production:
         if not any(path.startswith("tests/") for path in evidence):
             errors.append("Code/policy changes require test changes")
@@ -202,7 +225,7 @@ def validate_changes(root: Path, base: str) -> list[str]:
             errors.append("Code/policy changes require a change record in docs/changes/")
     architecture_policy_changed = any(
         path in {"architecture/modules.json", "tools/check_architecture.py", "CMakeLists.txt",
-                 ".github/workflows/quality.yml", ".github/branch-protection.json"}
+                 ".github/workflows/quality.yml", ".github/branch-protection.json", "CMakePresets.json"}
         for path in changed)
     if architecture_policy_changed:
         if "tests/test_architecture.py" not in evidence:

@@ -2,6 +2,12 @@
 
 Simplicity is a **C++20 / JUCE digital audio workstation**. Never silently replace
 its native stack with a web app or present the bootstrap as a finished DAW.
+**Windows 10/11 x64 only for now.** Keep installation low-friction: per-user/no-admin
+installer, portable ZIP, no end-user development tools/runtime setup, and a
+one-command developer bootstrap. Do not add macOS/Linux product work. Linux is
+allowed solely for internal analysis. Commercial licensing/distribution terms are
+pending; prepare/test installers but do not publish public releases until the owner
+confirms rights/terms. Never claim unsigned builds avoid SmartScreen.
 
 For every request:
 1. Read README.md, docs/workflow.md, docs/architecture.md and relevant module contracts.

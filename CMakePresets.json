@@ -1,0 +1,23 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "windows",
+      "displayName": "Windows x64 — supported product build",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/windows",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+      "cacheVariables": {"SIMPLICITY_WITH_JUCE": "ON", "SIMPLICITY_ANALYSIS_ONLY": "OFF"}
+    }
+  ],
+  "buildPresets": [
+    {"name": "windows", "configurePreset": "windows", "configuration": "Release", "jobs": 2},
+    {"name": "windows-debug", "configurePreset": "windows", "configuration": "Debug", "jobs": 2}
+  ],
+  "testPresets": [
+    {"name": "windows", "configurePreset": "windows", "configuration": "Release", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
+    {"name": "windows-debug", "configurePreset": "windows", "configuration": "Debug", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}}
+  ]
+}
