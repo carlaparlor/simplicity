@@ -33,7 +33,7 @@ juce::Font Look::getComboBoxFont(juce::ComboBox&) { return juce::Font(font()); }
 juce::Font Look::getPopupMenuFont() { return juce::Font(font(14)); }
 juce::Label* Look::createSliderTextBox(juce::Slider& slider) {
     auto* box = juce::LookAndFeel_V4::createSliderTextBox(slider);
-    box->setFont(font(13)); box->setBorderSize({0,4,0,4});
+    box->setFont(font(14)); box->setBorderSize({0,4,0,4});
     return box;
 }
 void Look::drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::Colour&, bool over, bool down) {
@@ -50,7 +50,7 @@ void Look::drawButtonText(juce::Graphics& g, juce::TextButton& b, bool, bool) {
     if (auto* icon = dynamic_cast<IconButton*>(&b)) {
         if (icon->caption) {
             glyph(g, icon->symbol, {10, (static_cast<float>(b.getHeight())-18)/2, 18, 18}, colour);
-            label(g, b.getButtonText(), b.getLocalBounds().withTrimmedLeft(36).reduced(0, 1), 13, colour);
+            label(g, b.getButtonText(), b.getLocalBounds().withTrimmedLeft(36).reduced(0, 1),14, colour);
         } else glyph(g, icon->symbol, b.getLocalBounds().toFloat().withSizeKeepingCentre(19, 19), colour);
     } else { g.setColour(colour); g.setFont(font()); g.drawText(b.getButtonText(), b.getLocalBounds().reduced(5, 0), juce::Justification::centred, true); }
 }

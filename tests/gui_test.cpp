@@ -9,7 +9,7 @@ int main(int argc, char** argv) {
     using namespace simplicity;
     ui::Look look;
     const juce::Font type(ui::font());
-    CHECK(type.getTypefaceName() == "RetroByte"); CHECK(type.getHeight() == 13);
+    CHECK(type.getTypefaceName() == "RetroByte"); CHECK(type.getHeight() == 14);
     for (int n=static_cast<int>(ui::Glyph::play); n<=static_cast<int>(ui::Glyph::maximize); ++n) {
         juce::Image symbol(juce::Image::ARGB,32,32,true);
         { juce::Graphics g(symbol); ui::glyph(g,static_cast<ui::Glyph>(n),{4,4,24,24},ui::foreground); }
@@ -20,6 +20,11 @@ int main(int argc, char** argv) {
         }
         CHECK(visible>15); CHECK(symbol.getPixelAt(0,0).getAlpha()==0);
     }
+    { juce::Image padded(juce::Image::ARGB,32,32,true); juce::Graphics g(padded);
+      ui::glyph(g,ui::Glyph::minus,{4,4,24,24},ui::foreground);
+      CHECK(padded.getPixelAt(5,16).getAlpha()==0); // Original 24x24 viewBox padding, not ink-bounds fitting.
+      CHECK(padded.getPixelAt(16,14).getAlpha()==0); // Upstream 2-unit stroke, not an expanded thick stroke.
+      CHECK(padded.getPixelAt(16,16).getAlpha()>200); }
     const auto icon=juce::ImageFileFormat::loadFrom(applicationIconPng,sizeof(applicationIconPng));
     CHECK(icon.isValid()); CHECK(icon.getWidth()==256); CHECK(icon.getHeight()==256);
     CHECK(icon.getPixelAt(0,0).getAlpha()==0); CHECK(icon.getPixelAt(10,128)==juce::Colour(0xff181818));

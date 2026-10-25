@@ -11,8 +11,8 @@ inline constexpr float cornerRadius = 4.0F;
 enum class Glyph { none, play, pause, stop, record, loop, undo, redo, folder, tracks,
                    grid, mixer, help, plus, minus, search, duplicate, trash, document,
                    wave, pattern, texture, rhythm, arrow, speaker, chevronDown, close, minimize, maximize };
-juce::FontOptions font(float height = 13.0F, bool strong = false);
-void label(juce::Graphics&, const juce::String&, juce::Rectangle<int>, float height = 13.0F,
+juce::FontOptions font(float height = 14.0F, bool strong = false);
+void label(juce::Graphics&, const juce::String&, juce::Rectangle<int>, float height = 14.0F,
            juce::Colour colour = foreground, bool strong = false);
 void glyph(juce::Graphics&, Glyph, juce::Rectangle<float>, juce::Colour);
 class IconButton final : public juce::TextButton {

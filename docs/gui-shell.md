@@ -4,7 +4,7 @@
 - True neutral grays: background #121212, panels #191919, controls #242424,
   dividers #303030, text #e5e5e5 / #a0a0a0, selection #363636, focus #c8c8c8.
   No global colour accent; four muted track/clip identities remain.
-- Embedded RetroByte Medium at 13–14 px (no synthetic bold); subtle 4 px control and 3 px clip corners.
+- Embedded RetroByte Medium at 14 px, with a 28 px position display (no synthetic bold); subtle 4 px control and 3 px clip corners.
   Coherent, official Lucide SVG icons; native accessible names, tooltips and focus rings.
 - One 62 px session/transport toolbar replaces the 64 px branding + 66 px transport
   rows. No oversized internal logo. The normal 26 px window title bar remains.

@@ -28,6 +28,14 @@ unresolved; no commercial/public release is authorized or claimed.
   (215/221), 100% functions (45/45). Windows-only rendering is excluded.
 - Windows GUI/runtime/installer gates pending; no merge until all pass.
 The real Windows render must be refreshed/visually inspected, not a mockup.
+Source review caught JUCE drawWithin fitting ink bounds instead of the SVG
+viewBox; explicit 24x24 mapping plus native padding/stroke assertions preserve
+Lucide's intended geometry rather than inflating each symbol independently.
+First Windows Debug/Release native suites passed (including the actual TTF/icon
+mask). Render review prompted 14 px text / 28 px clock sizing: RetroByte's 64-unit
+pixel grid and 896-unit ascent/descent align at multiples of 14, avoiding tiny
+fractional strokes. Existing control bounds remain; the clock's label padding is
+removed so its 28 px digits fit without horizontal compression.
 FontTools 4.60.1 independently confirmed every one of the 46 TTF s outline points;
 the shipped generators/tests use stdlib only, not FontTools.
 

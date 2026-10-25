@@ -36,6 +36,6 @@ void glyph(juce::Graphics& g, Glyph kind, juce::Rectangle<float> bounds, juce::C
     if (!icon.image) return;
     icon.image->replaceColour(icon.tint,colour); icon.tint=colour;
     // Keep the complete Lucide 24x24 viewBox, including its standard padding/stroke.
-    icon.image->drawWithin(g,bounds,juce::RectanglePlacement::centred,1.0F);
+    icon.image->draw(g,1.0F,juce::RectanglePlacement(juce::RectanglePlacement::centred).getTransformToFit(juce::Rectangle<float>{0,0,24,24},bounds));
 }
 }
