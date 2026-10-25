@@ -43,7 +43,7 @@ public:
                 g.setColour(colour.withAlpha(track.muted ? 0.12F : 0.27F)); g.fillRoundedRectangle(r, 3);
                 g.setColour(colour.withAlpha(track.muted ? 0.3F : 0.85F)); g.fillRect(r.getX(), r.getY(), r.getWidth(), 3.0F);
                 if (model.selectedClip() == c.id) { g.setColour(ink); g.drawRoundedRectangle(r, 3, 1.5F); }
-                ui::label(g, juce::String(c.name), r.toNearestInt().reduced(8, 4).withHeight(21), 11, colour, true);
+                ui::label(g, juce::String(c.name), r.toNearestInt().reduced(8, 4).withHeight(21),14, colour, true);
                 // Deliberately illustrative note blocks, not audio waveforms or recorded data.
                 g.setColour(colour.withAlpha(track.muted ? 0.15F : 0.65F));
                 for (int step = 0; step < static_cast<int>(c.length); ++step) {
@@ -52,7 +52,7 @@ public:
                 }
             }
         }
-        if (tracks.empty()) ui::label(g, "No tracks", {28, 36, getWidth()-56, 30}, 16, muted);
+        if (tracks.empty()) ui::label(g, "No tracks", {28, 36, getWidth()-56, 30},14, muted);
         const auto x = static_cast<float>(model.position() * beatWidth);
         g.setColour(ink); g.fillRect(x, 0.0F, 1.5F, static_cast<float>(getHeight()));
     }
@@ -79,7 +79,7 @@ class TrackName final : public juce::Label {
 public:
     std::function<void()> selected;
     bool active{};
-    TrackName() { setEditable(false, true); setFont(ui::font(13)); setBorderSize({0, 8, 0, 6}); }
+    TrackName() { setEditable(false, true); setFont(ui::font(14)); setBorderSize({0, 8, 0, 6}); }
     void mouseDown(const juce::MouseEvent& e) override { if (selected) selected(); juce::Label::mouseDown(e); }
     void paint(juce::Graphics& g) override { if (active) { g.setColour(ui::selected); g.fillRoundedRectangle(getLocalBounds().toFloat(), ui::cornerRadius); } juce::Label::paint(g); }
 };
@@ -117,7 +117,7 @@ public:
         for (int i = 0; i < names.size(); ++i) {
             const int y = i*rowHeight-scroll; const auto colour = trackColours[model.tracks()[static_cast<std::size_t>(i)].colour % 4];
             ui::glyph(g, ui::Glyph::wave, {8, static_cast<float>(y+15), 16, 16}, colour);
-            ui::label(g, number(i+1), {8,y+46,20,23}, 10, muted);
+            ui::label(g, number(i+1), {8,y+46,20,23},14, muted);
             g.setColour(line.withAlpha(0.5F)); g.drawHorizontalLine(y+rowHeight-1, 0, static_cast<float>(getWidth()));
         }
     }
@@ -153,10 +153,10 @@ public:
     void paint(juce::Graphics& g) override {
         g.fillAll(bg.withAlpha(0.95F)); auto r = juce::Rectangle<int>(getWidth()/2-250,getHeight()/2-210,500,410);
         g.setColour(panel); g.fillRoundedRectangle(r.toFloat(),6); r = r.reduced(30);
-        ui::label(g,"Shortcuts",r.removeFromTop(42),22,ink,true);
+        ui::label(g,"Shortcuts",r.removeFromTop(42),28,ink,true);
         for (const auto& s : {"Space     Play / pause", "Enter      Stop and return", "Ctrl N     New session      Ctrl Z / Y     Undo / redo", "Ctrl D     Duplicate clip    Delete     Delete selection", "B / M      Browser / mixer", "Double-click a track name to rename it."}) ui::label(g,s,r.removeFromTop(31),14);
-        ui::label(g,"Preview: visual sketches only.",r.removeFromTop(40),13,muted);
-        ui::label(g,"Audio, recording and project saving are not available yet.",r.removeFromTop(28),13,muted);
+        ui::label(g,"Preview: visual sketches only.",r.removeFromTop(40),14,muted);
+        ui::label(g,"Audio, recording and project saving are not available yet.",r.removeFromTop(28),14,muted);
     }
 };
 } // namespace
@@ -185,7 +185,7 @@ public:
         for (auto* c : std::initializer_list<juce::Component*>{&title,&position,&tempo,&file,&play,&stop,&record,&undo,&redo,&browserToggle,&mixerToggle,&loop,&help,&addTrack,&addClip,&duplicate,&remove,&zoomOut,&zoomIn,&preview,&snap,&browser,&lanes,&headers,&mixerView}) owner.addAndMakeVisible(c);
         owner.addChildComponent(helpPanel);
         title.setFont(ui::font(14,true)); title.setEditable(false,true); title.setTooltip("Double-click to rename session"); title.onTextChange = [this] { model.setTitle(title.getText().toStdString()); refresh(); };
-        position.setFont(ui::font(22)); position.setTooltip("Visual position: bar, beat, fraction");
+        position.setFont(ui::font(28)); position.setBorderSize({0,0,0,0}); position.setTooltip("Visual position: bar, beat, fraction");
         tempo.setName("Tempo, 40 to 240 BPM"); tempo.setFont(ui::font(14)); tempo.setInputRestrictions(3,"0123456789"); tempo.setBorder({5,8,4,4});
         tempo.onReturnKey = [this] { model.setBpm(tempo.getText().getDoubleValue()); refresh(); owner.grabKeyboardFocus(); };
         tempo.onFocusLost = [this] { model.setBpm(tempo.getText().getDoubleValue()); refresh(); };
@@ -257,22 +257,22 @@ public:
     void paint(juce::Graphics& g) {
         g.fillAll(bg); g.setColour(panel); g.fillRect(toolbarArea); g.setColour(line); g.drawHorizontalLine(toolbarArea.getBottom()-1,0,static_cast<float>(owner.getWidth()));
         g.drawVerticalLine(280,18,44); g.drawVerticalLine(603,18,44);
-        ui::label(g,"bpm",{666,17,32,29},12,muted); ui::label(g,"4/4",{709,17,40,29},13,muted);
+        ui::label(g,"bpm",{666,17,32,29},14,muted); ui::label(g,"4/4",{709,17,40,29},14,muted);
         if(showMixer) {
             g.setColour(panel); g.fillRect(mixerArea); g.setColour(line); g.drawHorizontalLine(mixerArea.getY(),static_cast<float>(mixerArea.getX()),static_cast<float>(mixerArea.getRight()));
-            ui::label(g,"Mixer",{mixerArea.getX()+16,mixerArea.getY(),120,29},12,muted);
+            ui::label(g,"Mixer",{mixerArea.getX()+16,mixerArea.getY(),120,29},14,muted);
             const int x=mixerArea.getRight()-113, y=mixerArea.getY()+40;
-            ui::glyph(g,ui::Glyph::speaker,{static_cast<float>(x),static_cast<float>(y+2),17,17},muted); ui::label(g,"Master",{x+25,y,80,23},13);
+            ui::glyph(g,ui::Glyph::speaker,{static_cast<float>(x),static_cast<float>(y+2),17,17},muted); ui::label(g,"Master",{x+25,y,80,23},14);
             g.setColour(bg); g.fillRoundedRectangle(static_cast<float>(x+15),static_cast<float>(y+40),5,static_cast<float>(std::max(32,mixerArea.getHeight()-110)),2); g.fillRoundedRectangle(static_cast<float>(x+28),static_cast<float>(y+40),5,static_cast<float>(std::max(32,mixerArea.getHeight()-110)),2);
-            ui::label(g,"-inf",{x+50,y+40,50,24},13,muted);
+            ui::label(g,"-inf",{x+50,y+40,50,24},14,muted);
         }
-        g.setColour(panel); g.fillRect(rulerArea); ui::label(g,"Tracks",rulerArea.withWidth(192).reduced(16,0),12,muted);
+        g.setColour(panel); g.fillRect(rulerArea); ui::label(g,"Tracks",rulerArea.withWidth(192).reduced(16,0),14,muted);
         const int origin=lanes.getX()-lanes.getViewPositionX();
         { juce::Graphics::ScopedSaveState saved(g); g.reduceClipRegion(rulerArea.withTrimmedLeft(192));
           for(int bar=0;bar<16;++bar) { const int x=origin+static_cast<int>(bar*4*canvas.beatWidth); ui::label(g,juce::String(bar+1),{x+6,rulerArea.getY(),45,30},12,bar%4==0 ? ink:muted); }
           const int px=origin+static_cast<int>(model.position()*canvas.beatWidth); g.setColour(ink); g.fillRoundedRectangle(static_cast<float>(px),static_cast<float>(rulerArea.getY()+22),5,7,1);
         }
-        g.setColour(panel); g.fillRect(statusArea); ui::label(g,juce::String(static_cast<int>(model.tracks().size()))+" tracks",statusArea.reduced(15,0).withWidth(160),11,muted);
+        g.setColour(panel); g.fillRect(statusArea); ui::label(g,juce::String(static_cast<int>(model.tracks().size()))+" tracks",statusArea.reduced(15,0).withWidth(160),14,muted);
     }
 };
 
@@ -357,7 +357,7 @@ juce::String WorkspaceView::runSmokeTest() {
     for(int n=0;n<i.channels[0]->level.getNumChildComponents();++n)
         if(auto* candidate=dynamic_cast<juce::Label*>(i.channels[0]->level.getChildComponent(n)))levelText=candidate;
     if(levelText==nullptr)return "Editable mixer level field missing";
-    if(levelText->findColour(juce::Label::outlineColourId)!=juce::Colours::transparentBlack || levelText->getFont().getHeight()!=13 || levelText->findColour(juce::TextEditor::highlightColourId)!=ui::selected)return "Cached mixer textbox theme drifted";
+    if(levelText->findColour(juce::Label::outlineColourId)!=juce::Colours::transparentBlack || levelText->getFont().getHeight()!=14 || levelText->findColour(juce::TextEditor::highlightColourId)!=ui::selected)return "Cached mixer textbox theme drifted";
     levelText->showEditor();
     if(levelText->getCurrentTextEditor()==nullptr)return "Mixer level text editor missing";
     levelText->getCurrentTextEditor()->setText("-9.5 dB",false); levelText->hideEditor(false);

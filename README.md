@@ -2,7 +2,7 @@
 
 A **Windows-only C++20 / JUCE digital audio workstation**, now with a native dark,
 minimal **GUI shell**: compact transport, searchable session/template browser,
-arrangement and mixer. Grayscale controls, subtle corners and Segoe UI keep the
+arrangement and mixer. Grayscale controls, subtle corners and embedded RetroByte Medium keep the
 workspace quiet; only tracks and clips carry colour. Reversible sketch editing
 keeps the first interactions simple.
 

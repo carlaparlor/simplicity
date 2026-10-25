@@ -11,7 +11,7 @@ BrowserPanel::BrowserPanel(Workspace& model) : model_(model) {
     session_.setComponentID("browser-session"); templatesButton_.setComponentID("browser-templates"); add_.setComponentID("browser-new-track");
     session_.onClick = [this] { setTemplateTab(false); }; templatesButton_.onClick = [this] { setTemplateTab(true); };
     session_.setTooltip("Browse and select session tracks"); templatesButton_.setTooltip("Add in-memory track templates; no audio or instruments included");
-    search.setName("Search browser"); search.setComponentID("browser-search"); search.setFont(ui::font(13));
+    search.setName("Search browser"); search.setComponentID("browser-search"); search.setFont(ui::font(14));
     search.setTextToShowWhenEmpty("Search", ui::secondary); search.setBorder({1, 1, 1, 1}); search.setIndents(31, 7);
     search.onTextChange = [this] { updateResults(); };
     viewport_.setViewedComponent(&content_, false); viewport_.setScrollBarsShown(true, false); viewport_.setScrollBarThickness(6);
@@ -74,6 +74,6 @@ void BrowserPanel::resized() {
 }
 void BrowserPanel::paint(juce::Graphics& g) {
     g.fillAll(ui::panel); g.setColour(ui::border); g.drawVerticalLine(getWidth()-1, 0, static_cast<float>(getHeight()));
-    if (results_.empty()) ui::label(g, search.getText().isEmpty() ? "No tracks" : "No matches", {23, 120, getWidth()-46, 28}, 13, ui::secondary);
+    if (results_.empty()) ui::label(g, search.getText().isEmpty() ? "No tracks" : "No matches", {23, 120, getWidth()-46, 28},14, ui::secondary);
 }
 }

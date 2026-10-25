@@ -24,7 +24,7 @@ function Test-AppIcon([string]$Exe) {
                 $pixel = $bitmap.GetPixel($x, $y)
                 if ($pixel.A -eq 0) { continue }
                 Assert-True ($pixel.R -eq $pixel.G -and $pixel.G -eq $pixel.B) 'Executable icon must be grayscale'
-                if ($pixel.R -eq 91) { $grey++ }
+                if ($pixel.R -eq 24) { $grey++ }
                 if ($pixel.R -eq 238) { $ink++ }
             }
         }
@@ -71,7 +71,7 @@ try {
     Assert-True ($LASTEXITCODE -eq 0) 'Cannot read installer manifest'
     Assert-True ((Get-Content $manifest -Raw) -match 'level="asInvoker"') 'Installer must not request elevation'
     Expand-Archive -LiteralPath (Join-Path $packages 'Simplicity-Portable.zip') -DestinationPath $portable
-    foreach ($file in @('simplicity.exe', 'README.txt', 'notices/JUCE-LICENSE.md', 'notices/dependencies.md')) {
+    foreach ($file in @('simplicity.exe', 'README.txt', 'notices/JUCE-LICENSE.md', 'notices/dependencies.md', 'notices/LUCIDE-LICENSE.txt', 'notices/RETROBYTE-NOTICE.txt')) {
         Assert-True (Test-Path (Join-Path $portable $file)) "Missing portable file: $file"
     }
     Test-AppIcon (Join-Path $portable 'simplicity.exe')

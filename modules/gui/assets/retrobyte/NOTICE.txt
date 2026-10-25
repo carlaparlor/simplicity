@@ -1,0 +1,28 @@
+RetroByte Medium, version 001.000
+Copyright: IgorOvsyannykov. Designer/publisher: HipFonts.
+Requested source: https://www.1001fonts.com/retrobyte-font.html
+Commercial source: https://creativemarket.com/HipFonts/260616555-Retro-Byte-Modern-Pixel-Font
+
+IMPORTANT: The free font is personal-use only. Commercial rights, embedding and
+redistribution permissions for Simplicity and its glyph-derived icon are unresolved.
+The owner explicitly requested development integration on 2026-10-25 and said they
+will negotiate licensing later. That request is NOT a license grant from HipFonts.
+No public/commercial release is authorized; obtain appropriate written permission
+before distribution. This notice does not sublicense the font or grant rights.
+The original font bytes, names and glyph outlines have not been modified.
+
+The linked download returned HTTP 403 in the coding environment. Identical
+RetroByte.ttf copies were located in these GitHub trees (not a source of rights):
+https://github.com/Arctie/bachelor-inn/tree/fa68522378d9069ba72347071769439a36ad1103/art/Fonts
+https://github.com/niniblade/playground-game/tree/493ff689aba4c529cb87e0b736657c8aff4a89d7/assets/retrobyte
+Both contain Git blob d10db1564b442988e28247f579e3797e82501eaa (14,212 bytes).
+TTF name tables identify RetroByte / Medium / IgorOvsyannykov; embedding flags
+are not a legal permission grant. The manifest records the SHA256.
+
+Linked terms: https://www.1001fonts.com/licenses/ffp.html
+Commercial use requires prior written permission. Modification is not permitted
+without written permission. Format conversion is allowed without changing names
+or glyphs. Publishing the font requires written permission. Application embedding
+is limited to personal-use applications that do not offer the typeface as a download.
+These terms remain applicable; describing a build as development-only does not
+resolve those rights. This revision does not claim commercial compliance.

@@ -23,7 +23,14 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: python3 tools/check_architecture.py --base "$BASE_SHA"
-      - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Python policy and asset tests
+        shell: bash
+        run: |
+          mkdir -p build-policy
+          python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee build-policy/python-tests.log
+      - name: Annotate failing Python output
+        if: failure()
+        run: python3 tools/annotate_ctest.py build-policy/python-tests.log
   build:
     name: Windows x64 (${{ matrix.config }})
     runs-on: windows-2022
@@ -58,6 +65,9 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_SANITIZERS=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - name: Annotate failing CTest output
+        if: failure()
+        run: python3 tools/annotate_ctest.py build
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -73,6 +83,9 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_COVERAGE=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
+      - name: Annotate failing CTest output
+        if: failure()
+        run: python3 tools/annotate_ctest.py build
       - name: Enforce 95% lines and 90% branches
         run: >-
           .venv/bin/gcovr --root . --filter 'modules/'

@@ -98,6 +98,10 @@ class ArchitectureTests(PolicyFixture):
         self.write("modules/gui/src/unregistered_style.cpp", "// Must not be silently globbed.\n")
         self.rejected("CMake must match")
 
+    def test_domain_cannot_include_gui_asset_data(self):
+        self.write("modules/engine/src/engine.cpp", "#include <simplicity/ui_asset_data.h>\n")
+        self.rejected("undeclared dependency")
+
     def test_unlisted_source(self):
         self.write("modules/core/src/extra.cpp", "int extra;\n")
         self.rejected("CMake must match")
@@ -221,6 +225,11 @@ class ChangeEvidenceTests(PolicyFixture):
     def setUp(self):
         super().setUp()
         self.git("init", "-q")
+        # Git 2.55 runner background writers can outlive commit and race rmtree.
+        # Keep throwaway repos synchronous; never ignore/retry cleanup errors.
+        for key, value in (("maintenance.auto", "false"), ("gc.auto", "0"),
+                           ("gc.autoDetach", "false"), ("core.fsmonitor", "false")):
+            self.git("config", key, value)
         self.git("config", "user.email", "tests@example.invalid")
         self.git("config", "user.name", "Policy tests")
         self.git("add", ".")
@@ -232,6 +241,11 @@ class ChangeEvidenceTests(PolicyFixture):
     def change_engine(self):
         path = self.root / "modules/engine/src/engine.cpp"
         path.write_text(path.read_text() + "\n// behavioral change\n")
+
+    def test_fixture_git_background_tasks_disabled(self):
+        for key, value in (("maintenance.auto", "false"), ("gc.auto", "0"),
+                           ("gc.autoDetach", "false"), ("core.fsmonitor", "false")):
+            self.assertEqual(self.git("config", "--get", key).strip(), value)
 
     def test_code_without_evidence_fails(self):
         self.change_engine()

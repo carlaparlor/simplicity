@@ -7,9 +7,10 @@
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI initialiser;
     using namespace simplicity;
+    ui::Look look;
     const juce::Font type(ui::font());
-    CHECK(type.getTypefaceName() == "Segoe UI"); CHECK(type.getHeight() == 13);
-    for (int n=static_cast<int>(ui::Glyph::play); n<=static_cast<int>(ui::Glyph::speaker); ++n) {
+    CHECK(type.getTypefaceName() == "RetroByte"); CHECK(type.getHeight() == 14);
+    for (int n=static_cast<int>(ui::Glyph::play); n<=static_cast<int>(ui::Glyph::maximize); ++n) {
         juce::Image symbol(juce::Image::ARGB,32,32,true);
         { juce::Graphics g(symbol); ui::glyph(g,static_cast<ui::Glyph>(n),{4,4,24,24},ui::foreground); }
         int visible=0;
@@ -19,10 +20,55 @@ int main(int argc, char** argv) {
         }
         CHECK(visible>15); CHECK(symbol.getPixelAt(0,0).getAlpha()==0);
     }
+    { juce::Image padded(juce::Image::ARGB,32,32,true);
+      { juce::Graphics g(padded); ui::glyph(g,ui::Glyph::minus,{4,4,24,24},ui::foreground); }
+      // End the Graphics context before readback: Direct2D batches until EndDraw.
+      if(padded.getPixelAt(16,16).getAlpha()<=200) {
+          int minX=32,minY=32,maxX=-1,maxY=-1;
+          for(int y=0;y<32;++y)for(int x=0;x<32;++x)if(padded.getPixelAt(x,y).getAlpha()>0) {
+              minX=std::min(minX,x); minY=std::min(minY,y); maxX=std::max(maxX,x); maxY=std::max(maxY,y);
+          }
+          std::cerr<<"minus readback alpha="<<static_cast<int>(padded.getPixelAt(16,16).getAlpha())<<" bounds="<<minX<<","<<minY<<","<<maxX<<","<<maxY<<"\n";
+      }
+      CHECK(padded.getPixelAt(5,16).getAlpha()==0); // Original 24x24 viewBox padding, not ink-bounds fitting.
+      CHECK(padded.getPixelAt(16,14).getAlpha()==0); // Upstream 2-unit stroke, not an expanded thick stroke.
+      CHECK(padded.getPixelAt(16,16).getAlpha()>200); }
     const auto icon=juce::ImageFileFormat::loadFrom(applicationIconPng,sizeof(applicationIconPng));
     CHECK(icon.isValid()); CHECK(icon.getWidth()==256); CHECK(icon.getHeight()==256);
-    CHECK(icon.getPixelAt(0,0).getAlpha()==0); CHECK(icon.getPixelAt(10,128)==juce::Colour(0xff5b5b5b));
-    ui::Look look;
+    CHECK(icon.getPixelAt(0,0).getAlpha()==0); CHECK(icon.getPixelAt(10,128)==juce::Colour(0xff181818));
+    CHECK(look.getTypefaceForFont(juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),13,juce::Font::plain)))->getName()=="RetroByte");
+    // Compare the icon's opaque mask with the actual embedded font's s path.
+    juce::GlyphArrangement letter; letter.addLineOfText(juce::Font(ui::font(100)),"s",0,100);
+    CHECK(letter.getNumGlyphs()==1);
+    juce::Path letterPath; letter.getGlyph(0).createPath(letterPath);
+    CHECK(!letterPath.isEmpty());
+    const float h=256.0F*0.62F, w=h*6.0F/7.0F;
+    letterPath.applyTransform(letterPath.getTransformToScaleToFit((256-w)/2,(256-h)/2,w,h,true));
+    int opaqueInk=0;
+    for(int y=0;y<256;++y)for(int x=0;x<256;++x) {
+        const auto pixel=icon.getPixelAt(x,y);
+        const bool inside=letterPath.contains(static_cast<float>(x)+0.5F,static_cast<float>(y)+0.5F);
+        if(pixel.getRed()==238) { ++opaqueInk; CHECK(inside); }
+        if(pixel.getRed()==24) CHECK(!inside);
+    }
+    CHECK(opaqueInk>1000);
+    // Tinting a cached Lucide icon must not retain the previous track colour.
+    for(auto tint:{juce::Colours::red,ui::foreground}) {
+        juce::Image image(juce::Image::ARGB,32,32,true);
+        { juce::Graphics g(image); ui::glyph(g,ui::Glyph::search,{4,4,24,24},tint); }
+        int opaque=0;
+        for(int y=0;y<32;++y)for(int x=0;x<32;++x)if(image.getPixelAt(x,y).getAlpha()>200) {
+            ++opaque;
+            if(tint==ui::foreground) CHECK(image.getPixelAt(x,y).getRed()==image.getPixelAt(x,y).getBlue());
+            else CHECK(image.getPixelAt(x,y).getRed()>200 && image.getPixelAt(x,y).getBlue()==0);
+        }
+        CHECK(opaque>10); // Do not let an empty/unflushed image make the tint test vacuous.
+    }
+    { juce::Image empty(juce::Image::ARGB,32,32,true);
+      { juce::Graphics g(empty);
+        ui::glyph(g,ui::Glyph::none,{0,0,32,32},ui::foreground);
+        ui::glyph(g,static_cast<ui::Glyph>(999),{0,0,32,32},ui::foreground); }
+      for(int y=0;y<32;++y)for(int x=0;x<32;++x)CHECK(empty.getPixelAt(x,y).getAlpha()==0); }
     BrowserPanel::SearchField search;
     search.setLookAndFeel(&look); search.setSize(208,33); search.setFont(ui::font());
     search.setBorder({1,1,1,1}); search.setIndents(31,7); search.setTextToShowWhenEmpty("Search",ui::secondary);

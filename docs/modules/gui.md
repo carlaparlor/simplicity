@@ -29,7 +29,15 @@ Internal GCC coverage includes domain/adapter/shell, not Windows-only rendering.
 Manual DPI, screen-reader, dragging, wizard and desktop acceptance remain necessary.
 
 ## Extension points
-ui_style centralizes neutral theme metrics, Segoe UI and in-house vector icons;
+ui_style owns charcoal theme metrics and painting; ui_assets owns the embedded
+RetroByte Medium face and official Lucide SVGs. A message-thread shared cache is
+held by Look, with a non-owning weak registry. The native SVG parser supplies
+immutable stroked paths in 24x24 SVG coordinates; temporary Drawable components
+are destroyed immediately, not retained past JUCE shutdown. Native default text uses the embedded face; explicit OS
+fallback faces remain available for missing glyphs. Invalid/empty icon IDs draw
+nothing. No synthetic bold or installed font is required. Asset/license details
+and unresolved font rights are in docs/dependencies.md.
+
 BrowserPanel owns tab/search/scroll components and borrows the composition root
 Workspace. Its optional changed callback runs synchronously after a successful
 selection/addition; the owner refreshes views. Invalid rows/cap additions return
