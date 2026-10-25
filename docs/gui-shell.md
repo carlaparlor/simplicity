@@ -1,19 +1,21 @@
 # Workspace shell — design and interaction contract
 
 ## Visual direction
-- True neutral grays: background #181818, panels #202020, controls #292929,
-  dividers #363636, text #e5e5e5 / #a0a0a0, selection #414141, focus #c8c8c8.
+- True neutral grays: background #121212, panels #191919, controls #242424,
+  dividers #303030, text #e5e5e5 / #a0a0a0, selection #363636, focus #c8c8c8.
   No global colour accent; four muted track/clip identities remain.
-- Segoe UI, mostly regular 13–14 px; subtle 4 px control and 3 px clip corners.
-  Coherent, in-house vector icons; native accessible names, tooltips and focus rings.
+- Embedded RetroByte Medium at 13–14 px (no synthetic bold); subtle 4 px control and 3 px clip corners.
+  Coherent, official Lucide SVG icons; native accessible names, tooltips and focus rings.
 - One 62 px session/transport toolbar replaces the 64 px branding + 66 px transport
   rows. No oversized internal logo. The normal 26 px window title bar remains.
 - No inspector, inspector button, or I shortcut. Arrangement uses the right edge.
   Rename tracks inline; mute/solo on track headers and mixer; level in mixer.
 - A single quiet Preview help affordance explains limitations. No scattered
   explanatory paragraphs; empty/no-match labels and necessary control metadata remain.
-- Actual executable icon: lowercase s on gray, generated without third-party fonts
-  or art. Seven ICO sizes 16–256 plus matching runtime PNG; see tools/assets/.
+- Actual executable icon: RetroByte’s actual lowercase s on #181818 charcoal.
+  Seven ICO sizes 16–256 plus matching runtime PNG; see tools/assets/.
+  RetroByte commercial/embedding/redistribution rights remain unresolved; the
+  owner requested development use pending negotiation. No public release.
 
 ## What works now
 - Native resizable Windows GUI; minimum workspace 1080x640; initial 1440x900.

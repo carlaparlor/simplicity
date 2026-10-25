@@ -103,3 +103,18 @@ assert the 62 px toolbar, arrangement right edge/minimum width, removed I shortc
 inline rename, dB edits, searchable tab navigation/templates, 24-track cap, browser
 scrolling, deletion/undo synchronization, help, transport and clip dragging/undo.
 Snapshots remain real native JUCE renders, not design mockups.
+
+## Lucide / RetroByte / charcoal regressions
+
+`test_ui_assets.py` verifies pinned upstream SVG hashes, standard viewBox/stroke,
+license notices, exact embedded TTF/SVG bytes, deterministic regeneration, the
+actual TTF s polygon points and unsupported/missing glyph rejection. The small
+font-outline reader is build tooling for this pinned simple-polygon font, not a
+runtime/general-purpose untrusted-font parser. A one-off FontTools 4.60.1 audit
+independently matched all 46 points; it is not a build/test dependency.
+`gui_controls_and_render` verifies the loaded face is RetroByte even without an OS
+installation, renders every Lucide symbol and neutral tint reset, tests invalid/
+empty icons, and compares the icon's opaque pixels to the actual native font s
+path. Existing resize/control/shortcut/installer/sanitizer/coverage gates remain.
+Installer tests require both license notices and extract the charcoal icon from
+actual portable/installed executables. These tests do not grant font rights.

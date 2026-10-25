@@ -1,4 +1,4 @@
-"""Deterministic grayscale s artwork, stdlib-only; never hand-edit outputs.
+"""Exact RetroByte lowercase s on charcoal, stdlib-only; never hand-edit outputs.
 PNG compression bytes may differ between zlib versions (including Windows zlib-ng);
 tests enforce exact decoded pixels and runtime/resource parity, not compressor identity.
 """
@@ -9,26 +9,22 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZES = (16, 24, 32, 48, 64, 128, 256)
-# A compact lowercase s, as a filled outline; coordinates in a 100-unit square.
-CURVES = (
-    ((70, 32), (61, 25), (33, 25), (29, 41)),
-    ((29, 41), (24, 62), (61, 53), (60, 64)),
-    ((60, 64), (59, 74), (40, 72), (30, 65)),
-    ((30, 65), (28, 69), (26, 73), (25, 76)),
-    ((25, 76), (38, 85), (68, 86), (73, 67)),
-    ((73, 67), (79, 45), (42, 53), (42, 42)),
-    ((42, 42), (43, 32), (58, 36), (65, 41)),
-    ((65, 41), (67, 38), (69, 34), (70, 32)),
-)
+FONT = ROOT / 'modules/gui/assets/retrobyte/RetroByte.ttf'
+BACKGROUND = 24  # #181818 dark charcoal, not the old medium gray.
 
 
 def outline():
-    points = []
-    for a, b, c, d in CURVES:
-        for step in range(16):
-            t = step / 16
-            points.append(tuple((1-t)**3*a[i] + 3*(1-t)**2*t*b[i] + 3*(1-t)*t*t*c[i] + t**3*d[i] for i in (0, 1)))
-    return points
+    # Load the sibling parser without changing sys.path for callers/tests.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('retrobyte_outline', Path(__file__).with_name('retrobyte_outline.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    polygons = module.contours(FONT.read_bytes(), 's')
+    xs = [x for polygon in polygons for x, _ in polygon]
+    ys = [y for polygon in polygons for _, y in polygon]
+    scale = 62 / (max(ys)-min(ys))
+    mid_x, mid_y = (max(xs)+min(xs))/2, (max(ys)+min(ys))/2
+    return [[(50+(x-mid_x)*scale, 50-(y-mid_y)*scale) for x,y in polygon] for polygon in polygons]
 
 
 def chunk(kind, data):
@@ -39,8 +35,8 @@ def png(size):
     scale = 4
     n = size * scale
     mask = bytearray(n*n)
-    points = [(x*n/100, y*n/100) for x, y in outline()]
-    edges = list(zip(points, points[1:] + points[:1]))
+    polygons = [[(x*n/100,y*n/100) for x,y in polygon] for polygon in outline()]
+    edges = [edge for points in polygons for edge in zip(points, points[1:]+points[:1])]
     for y in range(n):
         yy = y + 0.5
         xs = sorted(a[0] + (yy-a[1])*(b[0]-a[0])/(b[1]-a[1]) for a, b in edges if (a[1] > yy) != (b[1] > yy))
@@ -59,7 +55,7 @@ def png(size):
                     cx, cy = min(max(xx, radius), n-radius), min(max(yy, radius), n-radius)
                     inside = (xx-cx)**2+(yy-cy)**2 <= radius**2
                     alpha += 255 if inside else 0
-                    value += 238 if mask[int(yy)*n+int(xx)] else 91
+                    value += 238 if mask[int(yy)*n+int(xx)] else BACKGROUND
             grey = round(value / (scale*scale))
             rows.extend((grey, grey, grey, round(alpha / (scale*scale))))
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(rows, 9)) + chunk(b'IEND', b'')

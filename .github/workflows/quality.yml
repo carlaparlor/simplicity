@@ -39,6 +39,21 @@ jobs:
       - name: One-command developer setup (no prerequisite installs on CI)
         shell: cmd
         run: setup.cmd -NoInstall -Configuration ${{ matrix.config }}
+      - name: Temporary native render retrieval (0-9)
+        if: matrix.config == 'Release'
+        shell: pwsh
+        run: |
+          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(0,min(10,len(p)))]"
+      - name: Temporary native render retrieval (10-19)
+        if: matrix.config == 'Release'
+        shell: pwsh
+        run: |
+          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(10,min(20,len(p)))]"
+      - name: Temporary native render retrieval (20-29)
+        if: matrix.config == 'Release'
+        shell: pwsh
+        run: |
+          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(20,min(30,len(p)))]"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:

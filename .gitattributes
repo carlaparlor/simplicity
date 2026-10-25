@@ -1,3 +1,7 @@
 # Generated assets must be identical on every host.
 app/assets/simplicity.ico binary
 modules/gui/include/simplicity/application_icon.h text eol=lf
+modules/gui/assets/retrobyte/RetroByte.ttf binary
+modules/gui/assets/lucide/*.svg text eol=lf
+modules/gui/assets/manifest.json text eol=lf
+modules/gui/include/simplicity/ui_asset_data.h text eol=lf

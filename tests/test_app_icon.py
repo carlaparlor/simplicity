@@ -47,7 +47,7 @@ class AppIconTests(unittest.TestCase):
                 self.assertEqual(g, b)
                 colours.add(r)
                 transparent += a < 255
-        self.assertTrue({91, 238}.issubset(colours))
+        self.assertTrue({24, 238}.issubset(colours))
         self.assertGreater(transparent, 0)
         self.assertLess(rows[4], 255)  # Small frames have antialiased, not necessarily clear, corners.
         if size >= 48:
@@ -103,7 +103,7 @@ class AppIconTests(unittest.TestCase):
         self.assertNotEqual(original, alternative)
         self.assertEqual(self.decode(alternative, 32), pixels)
         self.assertEqual(hashlib.sha256(pixels).hexdigest(),
-                         '1277a4079ac74bb3bdae4ac234da3fd286c0c770bac6fc1e8b66b118755303db')
+                         'acfbe47e2eb8e0b7f0e05b0050a5f590ca84b72032fb5cd17247da16b5d96561')
 
     def test_resource_and_runtime_wiring_are_present(self):
         self.assertIn('1 ICON "@SIMPLICITY_ICON@"', (ROOT / 'app/resources.rc.in').read_text())

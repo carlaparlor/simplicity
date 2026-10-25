@@ -98,6 +98,10 @@ class ArchitectureTests(PolicyFixture):
         self.write("modules/gui/src/unregistered_style.cpp", "// Must not be silently globbed.\n")
         self.rejected("CMake must match")
 
+    def test_domain_cannot_include_gui_asset_data(self):
+        self.write("modules/engine/src/engine.cpp", "#include <simplicity/ui_asset_data.h>\n")
+        self.rejected("undeclared dependency")
+
     def test_unlisted_source(self):
         self.write("modules/core/src/extra.cpp", "int extra;\n")
         self.rejected("CMake must match")

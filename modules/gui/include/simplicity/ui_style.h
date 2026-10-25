@@ -1,15 +1,16 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <simplicity/ui_assets.h>
 
 namespace simplicity::ui {
 // Message-thread rendering helpers; callers own components and keep Look alive
 // until every component using it has detached. Factory results transfer to JUCE.
-inline const juce::Colour background{0xff181818}, panel{0xff202020}, raised{0xff292929}, border{0xff363636};
-inline const juce::Colour foreground{0xffe5e5e5}, secondary{0xffa0a0a0}, selected{0xff414141}, focus{0xffc8c8c8};
+inline const juce::Colour background{0xff121212}, panel{0xff191919}, raised{0xff242424}, border{0xff303030};
+inline const juce::Colour foreground{0xffe5e5e5}, secondary{0xffa0a0a0}, selected{0xff363636}, focus{0xffc8c8c8};
 inline constexpr float cornerRadius = 4.0F;
 enum class Glyph { none, play, pause, stop, record, loop, undo, redo, folder, tracks,
                    grid, mixer, help, plus, minus, search, duplicate, trash, document,
-                   wave, pattern, texture, rhythm, arrow, speaker };
+                   wave, pattern, texture, rhythm, arrow, speaker, chevronDown, close, minimize, maximize };
 juce::FontOptions font(float height = 13.0F, bool strong = false);
 void label(juce::Graphics&, const juce::String&, juce::Rectangle<int>, float height = 13.0F,
            juce::Colour colour = foreground, bool strong = false);
@@ -23,6 +24,8 @@ public:
 class Look final : public juce::LookAndFeel_V4 {
 public:
     Look();
+    ~Look() override;
+    juce::Typeface::Ptr getTypefaceForFont(const juce::Font&) override;
     juce::Font getTextButtonFont(juce::TextButton&, int) override;
     juce::Font getComboBoxFont(juce::ComboBox&) override;
     juce::Font getPopupMenuFont() override;
@@ -35,5 +38,7 @@ public:
     void drawLinearSlider(juce::Graphics&, int, int, int, int, float, float, float, juce::Slider::SliderStyle, juce::Slider&) override;
     juce::Button* createDocumentWindowButton(int) override;
     void drawDocumentWindowTitleBar(juce::DocumentWindow&, juce::Graphics&, int, int, int, int, const juce::Image*, bool) override;
+private:
+    std::shared_ptr<Resources> assets_;
 };
 }
