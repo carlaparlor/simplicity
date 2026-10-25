@@ -108,4 +108,7 @@ class AppIconTests(unittest.TestCase):
     def test_resource_and_runtime_wiring_are_present(self):
         self.assertIn('1 ICON "@SIMPLICITY_ICON@"', (ROOT / 'app/resources.rc.in').read_text())
         self.assertIn('configure_file(resources.rc.in', (ROOT / 'app/CMakeLists.txt').read_text())
-        self.assertIn('setIcon(juce::ImageFileFormat::loadFrom(simplicity::applicationIconPng', (ROOT / 'app/main.cpp').read_text())
+        app = (ROOT / 'app/main.cpp').read_text()
+        self.assertIn('juce::ImageFileFormat::loadFrom(simplicity::applicationIconPng', app)
+        self.assertIn('setIcon(icon);', app)
+        self.assertIn('peer->setIcon(icon);', app)

@@ -8,7 +8,8 @@ class Window final : public juce::DocumentWindow {
 public:
     Window() : DocumentWindow("Simplicity", simplicity::ui::background, allButtons) {
         setUsingNativeTitleBar(false);
-        setIcon(juce::ImageFileFormat::loadFrom(simplicity::applicationIconPng, sizeof(simplicity::applicationIconPng)));
+        const auto icon = juce::ImageFileFormat::loadFrom(simplicity::applicationIconPng, sizeof(simplicity::applicationIconPng));
+        setIcon(icon);
         auto* workspace = new simplicity::WorkspaceView();
         setContentOwned(workspace, true); setLookAndFeel(&workspace->getLookAndFeel());
         setTitleBarHeight(26); setResizable(true, false); setResizeLimits(1080, 666, 3840, 2160);
@@ -18,6 +19,9 @@ public:
             height = std::clamp(display->userArea.getHeight() - 32, 666, 926);
         }
         centreWithSize(width, height); setVisible(true);
+        // DocumentWindow::setIcon paints our custom title bar; the peer also sets
+        // the native small/big window icons used by Windows taskbar and Alt-Tab.
+        if (auto* peer = getPeer()) peer->setIcon(icon);
     }
     ~Window() override { setLookAndFeel(nullptr); }
     void closeButtonPressed() override { juce::JUCEApplication::getInstance()->systemRequestedQuit(); }

@@ -31,12 +31,23 @@ window uses the same art. No new dependency or module; explicit CMake sources.
   exact decoded pixels (plus a fixed pixel digest), local repeat byte identity and
   checked-in runtime/resource byte parity, not zlib compressor identity. A distinct
   compression-variation regression proves this preserves the artwork guarantee.
-- Windows Debug/Release, GUI process/control/render and packaged executable-icon /
-  installer/portable lifecycle gates: pending CI; no merge until all pass.
+- Windows run [40234936540](https://github.com/carlaparlor/simplicity/actions/runs/40234936540)
+  at 0748194: all 7 jobs passed, including Debug/Release (9/9 CTests each), GUI
+  process/control/render, actual packaged-icon extraction and install/reinstall/
+  portable/uninstall lifecycle. ASan/UBSan and coverage CI also passed.
+- Final update explicitly registers the same image with the native window peer
+  as well as DocumentWindow's custom title bar and the executable resource; source
+  wiring regression covers both calls. This ensures native taskbar/Alt-Tab binding
+  is not confused with custom title-bar painting. Desktop appearance remains a
+  manual acceptance check. Final head requires all gates again; its run/head are
+  recorded on [PR #4](https://github.com/carlaparlor/simplicity/pull/4).
 - Actual Windows render at b840dcf was retrieved and visually reviewed. It exposed
   slider text boxes retaining cached upstream colours/font after dynamic insertion.
   Explicit look-and-feel refresh plus neutral text selection/font regression now
-  prevent that drift; a fresh render is required before finalizing evidence.
+  prevent that drift. The fresh 1440x900 Windows render at 0748194 was retrieved,
+  CRC-verified and visually reviewed: docs/images/workspace.png, 50,609 bytes,
+  SHA256 f42333d878e41611dc18f65f7a2391e17473eaa8eac6266964c8943edc759228.
+  Temporary screenshot diagnostics were removed; normal artifacts remain.
 
 ## Acceptance / limitations
 Check compact toolbar and right-edge arrangement, browser tabs/search/selection,
