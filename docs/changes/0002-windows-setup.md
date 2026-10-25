@@ -26,6 +26,8 @@ Local internal-analysis environment (Debian, GCC 12.2, CMake 4.4.4, Python 3.11)
 - Initial Windows CI found windows-latest ships a newer Visual Studio, not the
   supported VS2022 toolchain. Pinned CI to windows-2022 rather than bypassing setup
   prerequisites; added a regression policy check and actionable failure annotations.
+- Script regressions also cover broken Python/Store aliases and executable paths
+  with spaces. Lifecycle tests refuse to overwrite a real existing user install.
 - Module coverage unchanged: 100% lines (31/31), 98.1% branches (53/54).
 Windows setup/installer results are recorded on the PR after actual hosted runs;
 Linux results are not represented as Windows installer evidence.

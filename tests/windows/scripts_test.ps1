@@ -22,6 +22,20 @@ catch { if ($_.Exception.Message -notmatch 'Missing prerequisite: Missing.Test.T
 try { Invoke-Checked 'cmd.exe' @('/c', 'exit', '37'); throw 'Expected native command failure' }
 catch { if ($_.Exception.Message -notmatch 'exit 37') { throw } }
 Invoke-Checked 'cmd.exe' @('/c', 'exit', '0')
+# Discovery must tolerate an unusable Python/Store alias, and preserve paths with spaces.
+$fakeDirectory = Join-Path ([IO.Path]::GetTempPath()) ('python discovery ' + [guid]::NewGuid())
+New-Item -ItemType Directory $fakeDirectory | Out-Null
+$script:FakePython = Join-Path $fakeDirectory 'python.cmd'
+function Get-Command { param($Name, $ErrorAction) return [pscustomobject]@{ Source = $script:FakePython } }
+try {
+    Set-Content -LiteralPath $script:FakePython -Value "@echo off`r`nexit /b 1" -Encoding ascii
+    if ($null -ne (Find-Python)) { throw 'Broken Python alias must not count as an interpreter' }
+    Set-Content -LiteralPath $script:FakePython -Value "@echo off`r`necho C:\python with spaces\python.exe`r`nexit /b 0" -Encoding ascii
+    if ((Find-Python) -ne 'C:\python with spaces\python.exe') { throw 'Python discovery lost a spaced executable path' }
+} finally {
+    Remove-Item Function:Get-Command
+    Remove-Item -LiteralPath $fakeDirectory -Recurse -Force
+}
 # Failure annotations are deliberately present so setup diagnostics survive inaccessible runner logs.
 if (-not ((Get-Content (Join-Path $root 'tools/windows/setup.ps1') -Raw) -match '::error::SETUP FAILED')) { throw 'CI setup failure annotation missing' }
 Write-Host 'PASS: PowerShell 5.1 parsing, cmd failure propagation, NoInstall, native command success/failure.'

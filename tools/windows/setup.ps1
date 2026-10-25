@@ -25,12 +25,14 @@ function Install-Tool {
     Update-Path
 }
 function Find-Python {
+    # Store aliases and broken launchers must not abort discovery before winget can help.
+    $ErrorActionPreference = 'Continue'
     foreach ($name in @('py.exe', 'python.exe', 'python3.exe')) {
         $command = Get-Command $name -ErrorAction SilentlyContinue
         if ($command) {
             $arguments = @('-c', 'import sys; print(sys.executable) if sys.version_info >= (3,11) else sys.exit(1)')
             if ($name -eq 'py.exe') { $arguments = @('-3') + $arguments }
-            $result = & $command.Source @arguments 2>$null
+            try { $result = & $command.Source @arguments 2>$null } catch { continue }
             if ($LASTEXITCODE -eq 0 -and $result) { return [string]($result | Select-Object -Last 1) }
         }
     }

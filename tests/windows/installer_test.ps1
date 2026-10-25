@@ -3,6 +3,10 @@
 param([string]$PackageDir = 'build/packages')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+trap {
+    if ($env:GITHUB_ACTIONS -eq 'true') { Write-Host "::error::INSTALLER TEST FAILED: $($_.Exception.Message)" }
+    throw $_
+}
 function Assert-True($Condition, [string]$Message) { if (-not $Condition) { throw $Message } }
 function Run-Installer([string]$File, [string[]]$Arguments) {
     $process = Start-Process -FilePath $File -ArgumentList $Arguments -Wait -PassThru
@@ -20,6 +24,9 @@ $portable = Join-Path $workspace 'portable app'
 $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A92718CD-EC5F-4B46-8DDC-39B8D853A2CC}_is1'
 $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Simplicity.lnk'
 $installer = Join-Path $packages 'Simplicity-Setup.exe'
+# Never replace/remove a real user's existing installation during a test run.
+Assert-True (-not (Test-Path $key)) 'Lifecycle tests require a clean disposable user account: Simplicity is already installed'
+Assert-True (-not (Test-Path $shortcut)) 'Lifecycle tests require no existing Simplicity Start menu shortcut'
 try {
     New-Item -ItemType Directory -Force $workspace | Out-Null
     $checksums = @(Get-Content (Join-Path $packages 'SHA256SUMS.txt'))

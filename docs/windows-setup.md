@@ -105,7 +105,8 @@ windows-latest image), installs packaging prerequisites on its disposable runner
 command in Debug/Release, parses scripts with PowerShell 5.1, verifies command
 failures propagate, compiles the installer, checks the compiled manifest/static
 runtime, launches portable/installed builds, reinstalls and uninstalls. Tests use
-paths with spaces and `&`. Hosted runners are elevated; testing `asInvoker` and
+paths with spaces and `&`. Lifecycle tests refuse to run over an existing Simplicity install/shortcut;
+use a clean disposable account. Hosted runners are elevated; testing `asInvoker` and
 per-user registration is not a substitute for a human standard-user desktop test.
 SmartScreen behavior, visual wizard flow and restrictive enterprise accounts are
 human acceptance items; they are not claimed proven by CI.
