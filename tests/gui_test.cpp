@@ -20,8 +20,16 @@ int main(int argc, char** argv) {
         }
         CHECK(visible>15); CHECK(symbol.getPixelAt(0,0).getAlpha()==0);
     }
-    { juce::Image padded(juce::Image::ARGB,32,32,true); juce::Graphics g(padded);
-      ui::glyph(g,ui::Glyph::minus,{4,4,24,24},ui::foreground);
+    { juce::Image padded(juce::Image::ARGB,32,32,true);
+      { juce::Graphics g(padded); ui::glyph(g,ui::Glyph::minus,{4,4,24,24},ui::foreground); }
+      // End the Graphics context before readback: Direct2D batches until EndDraw.
+      if(padded.getPixelAt(16,16).getAlpha()<=200) {
+          int minX=32,minY=32,maxX=-1,maxY=-1;
+          for(int y=0;y<32;++y)for(int x=0;x<32;++x)if(padded.getPixelAt(x,y).getAlpha()>0) {
+              minX=std::min(minX,x); minY=std::min(minY,y); maxX=std::max(maxX,x); maxY=std::max(maxY,y);
+          }
+          std::cerr<<"minus readback alpha="<<static_cast<int>(padded.getPixelAt(16,16).getAlpha())<<" bounds="<<minX<<","<<minY<<","<<maxX<<","<<maxY<<"\n";
+      }
       CHECK(padded.getPixelAt(5,16).getAlpha()==0); // Original 24x24 viewBox padding, not ink-bounds fitting.
       CHECK(padded.getPixelAt(16,14).getAlpha()==0); // Upstream 2-unit stroke, not an expanded thick stroke.
       CHECK(padded.getPixelAt(16,16).getAlpha()>200); }
@@ -46,16 +54,21 @@ int main(int argc, char** argv) {
     CHECK(opaqueInk>1000);
     // Tinting a cached Lucide icon must not retain the previous track colour.
     for(auto tint:{juce::Colours::red,ui::foreground}) {
-        juce::Image image(juce::Image::ARGB,32,32,true); juce::Graphics g(image);
-        ui::glyph(g,ui::Glyph::search,{4,4,24,24},tint);
+        juce::Image image(juce::Image::ARGB,32,32,true);
+        { juce::Graphics g(image); ui::glyph(g,ui::Glyph::search,{4,4,24,24},tint); }
+        int opaque=0;
         for(int y=0;y<32;++y)for(int x=0;x<32;++x)if(image.getPixelAt(x,y).getAlpha()>200) {
+            ++opaque;
             if(tint==ui::foreground) CHECK(image.getPixelAt(x,y).getRed()==image.getPixelAt(x,y).getBlue());
+            else CHECK(image.getPixelAt(x,y).getRed()>200 && image.getPixelAt(x,y).getBlue()==0);
         }
+        CHECK(opaque>10); // Do not let an empty/unflushed image make the tint test vacuous.
     }
-    { juce::Image empty(juce::Image::ARGB,32,32,true); juce::Graphics g(empty);
-      ui::glyph(g,ui::Glyph::none,{0,0,32,32},ui::foreground);
-      ui::glyph(g,static_cast<ui::Glyph>(999),{0,0,32,32},ui::foreground);
-      CHECK(empty.getPixelAt(16,16).getAlpha()==0); }
+    { juce::Image empty(juce::Image::ARGB,32,32,true);
+      { juce::Graphics g(empty);
+        ui::glyph(g,ui::Glyph::none,{0,0,32,32},ui::foreground);
+        ui::glyph(g,static_cast<ui::Glyph>(999),{0,0,32,32},ui::foreground); }
+      for(int y=0;y<32;++y)for(int x=0;x<32;++x)CHECK(empty.getPixelAt(x,y).getAlpha()==0); }
     BrowserPanel::SearchField search;
     search.setLookAndFeel(&look); search.setSize(208,33); search.setFont(ui::font());
     search.setBorder({1,1,1,1}); search.setIndents(31,7); search.setTextToShowWhenEmpty("Search",ui::secondary);

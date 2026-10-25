@@ -31,10 +31,14 @@ The real Windows render must be refreshed/visually inspected, not a mockup.
 Source review caught JUCE drawWithin fitting ink bounds instead of the SVG
 viewBox; explicit 24x24 mapping plus native padding/stroke assertions preserve
 Lucide's intended geometry rather than inflating each symbol independently.
-The new native assertion caught Drawable's component-origin offset when mapping
-that viewBox directly. The provider now caches JUCE's parsed stroked outline paths
-in SVG coordinates, avoiding component layout entirely; the same strict center/
-padding/stroke assertions remain. Tint is applied at paint time, not mutated.
+The provider caches JUCE's parsed stroked outline paths in SVG coordinates,
+avoiding Drawable component layout/origins entirely; tint is applied at paint
+rather than mutated. A subsequent new native assertion initially read the target
+while its Graphics context was still open (Direct2D batches until EndDraw), giving
+an empty readback. The fixture now closes Graphics before sampling, like the
+existing glyph loop. Tint tests require nonzero opaque pixels so this cannot
+silently become a vacuous pass. Strict center/padding/stroke thresholds remain;
+no production rendering assertion has been removed or weakened.
 First Windows Debug/Release native suites passed (including the actual TTF/icon
 mask). Render review prompted 14 px text / 28 px clock sizing: RetroByte's 64-unit
 pixel grid and 896-unit ascent/descent align at multiples of 14, avoiding tiny
