@@ -16,5 +16,5 @@ if __name__ == '__main__':
     path = Path(sys.argv[1])
     if path.is_dir():
         path = path / 'Testing/Temporary/LastTest.log'
-    text = path.read_text(errors='replace') if path.exists() else 'CTest log unavailable; inspect the preceding failed step.'
+    text = path.read_text(errors='replace') if path.exists() else 'Test log unavailable; inspect the preceding failed step.'
     print('\n'.join(annotations(text)))

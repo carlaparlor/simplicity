@@ -21,13 +21,22 @@ unresolved; no commercial/public release is authorized or claimed.
   font/whole-icon-mask checks, SVG tint reset and packaged-notice/icon regressions.
 
 ## Validation
-- Local architecture/change checks and 55 Python policy/asset tests passed.
+- Local architecture/change checks and 61 Python policy/asset/diagnostic tests passed.
 - Local analysis CTest 7/7; separate ASan/UBSan/leak CTest 7/7 passed.
 - Strict C++20 GCC GUI/app/test syntax against pinned JUCE passed (-Werror).
 - Compiled domain/adapter/shell coverage 100% lines (150/150), 97.3% branches
   (215/221), 100% functions (45/45). Windows-only rendering is excluded.
-- Windows GUI/runtime/installer gates pending; no merge until all pass.
-The real Windows render must be refreshed/visually inspected, not a mockup.
+- Windows Debug/Release native suites passed 9/9 at 59baf13 (run 40241047049).
+- Actual Windows render refreshed and inspected: `docs/images/workspace.png`,
+  1440x900, 42,809 bytes, SHA256
+  `ef53bb82077a529617f995369eb6167d7ab9e45e2d2f6c2a897c9d002ee86b13`.
+  Derived from Release check 121312920033, source 59baf13; no production GUI
+  changes followed this capture. This is a native render, not a mockup.
+- Windows installer/portable check 121313707477 passed at 59baf13: supported
+  Release setup/build/CTest, SHA-verified Inno Setup compiler, packaging and real
+  install/upgrade/uninstall/portable/icon/notices lifecycle tests. Final-head
+  required checks must also pass before merge; authoritative results and the
+  development artifact are linked in PR #5.
 Source review caught JUCE drawWithin fitting ink bounds instead of the SVG
 viewBox; explicit 24x24 mapping plus native padding/stroke assertions preserve
 Lucide's intended geometry rather than inflating each symbol independently.
@@ -54,22 +63,18 @@ taskbar/Alt-Tab and title bar. Test minimum size, DPI/readability, text entry an
 accessibility manually. Still in-memory sketches, no audio/recording/saving.
 Font license, commercial JUCE terms, signing and public release remain pending.
 
-### CI diagnostic follow-up
-Native Windows Debug/Release suites at bdb48ac passed, including the strict
-padding/stroke readback and font/icon-mask tests. The coverage job's CTest failed;
-Azure log download is unavailable from the coding environment. A temporary,
-read-only Actions log retrieval step will diagnose that exact failure before
-finalizing; no gate is being bypassed or marked passed without evidence.
-
-The next coverage CTest passed; log retrieval itself failed. A later ASan CTest
-also failed, so both Linux jobs now annotate their own failing CTest sections
-without relying on Azure downloads. Added four tests for annotation selection,
-command escaping, truncated/crash output and bounds. Temporary repeated native
-startup tests seek reproducible evidence rather than silently rerunning a red gate.
-
-Native startup stress (30 repetitions per native binary) passed locally under
-ASan/UBSan and in CI. The log retrieval failure is gh CLI's explicit ANSI-output
-protection, not a coverage test failure; opt in for these known build logs, then
-strip ANSI before annotation. Retrieve the exact original coverage, ASan and
-Python-policy failures. Python-policy logs are now piped through tee with explicit
-bash/pipefail and annotated on failure; failed tests still fail the step/job.
+### CI diagnostic follow-up — resolved fixture race
+The exact original coverage, ASan and Python-policy failures all identify
+`test_removed_test_not_evidence` cleanup, not a failed policy assertion or memory
+sanitizer finding: Git 2.55 on Linux was still writing inside the throwaway `.git`
+(`Directory not empty: .git` / `objects`) as TemporaryDirectory removed it.
+The fixture now disables automatic maintenance/GC detachment/fsmonitor before its
+first commit. A regression verifies every setting; 180 fresh fixture lifecycles
+(30 repetitions of all 6 change-evidence cases) passed locally. Cleanup errors
+remain fatal; no retries/ignore-errors, weakened tests or gate bypasses.
+Native startup stress (30 repeats per binary) passed locally and in CI, providing
+additional evidence that the failure was the Python fixture, not native memory.
+Five failure-annotation regressions cover selection, command escaping, partial
+crash output, bounds and CLI directory/file/missing-log behavior. Python output retains bash pipefail while being tee'd.
+Temporary render/log retrieval, extended Actions permissions and diagnostic stress
+steps were removed. Normal required CTest/coverage/sanitizer gates remain intact.

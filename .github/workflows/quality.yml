@@ -25,10 +25,12 @@ jobs:
         run: python3 tools/check_architecture.py --base "$BASE_SHA"
       - name: Python policy and asset tests
         shell: bash
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee policy-tests.log
+        run: |
+          mkdir -p build-policy
+          python3 -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee build-policy/python-tests.log
       - name: Annotate failing Python output
         if: failure()
-        run: python3 tools/annotate_ctest.py policy-tests.log
+        run: python3 tools/annotate_ctest.py build-policy/python-tests.log
   build:
     name: Windows x64 (${{ matrix.config }})
     runs-on: windows-2022
@@ -44,21 +46,6 @@ jobs:
       - name: One-command developer setup (no prerequisite installs on CI)
         shell: cmd
         run: setup.cmd -NoInstall -Configuration ${{ matrix.config }}
-      - name: Temporary native render retrieval (0-9)
-        if: matrix.config == 'Release'
-        shell: pwsh
-        run: |
-          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(0,min(10,len(p)))]"
-      - name: Temporary native render retrieval (10-19)
-        if: matrix.config == 'Release'
-        shell: pwsh
-        run: |
-          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(10,min(20,len(p)))]"
-      - name: Temporary native render retrieval (20-29)
-        if: matrix.config == 'Release'
-        shell: pwsh
-        run: |
-          python -c "import base64;from pathlib import Path;s=base64.b64encode(Path('build/windows/screenshots/workspace.png').read_bytes()).decode();p=[s[i:i+3800] for i in range(0,len(s),3800)];[print('::notice title=render-'+str(i)+'::'+str(len(p))+' '+p[i]) for i in range(20,min(30,len(p)))]"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
@@ -78,8 +65,6 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_SANITIZERS=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
-      - name: Stress native process startup (temporary diagnosis)
-        run: ctest --test-dir build --output-on-failure --repeat until-fail:30 -E architecture_policy
       - name: Annotate failing CTest output
         if: failure()
         run: python3 tools/annotate_ctest.py build
@@ -89,9 +74,6 @@ jobs:
           name: sanitizer-logs
           path: build/Testing/Temporary/
   coverage:
-    permissions:
-      contents: read
-      actions: read # temporary: retrieve the previous failed CTest log
     name: Internal analysis — first-party coverage
     runs-on: ubuntu-latest
     steps:
@@ -101,29 +83,9 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DSIMPLICITY_ANALYSIS_ONLY=ON -DSIMPLICITY_COVERAGE=ON
       - run: cmake --build build --parallel 2
       - run: ctest --test-dir build --output-on-failure
-      - name: Stress native process startup (temporary diagnosis)
-        run: ctest --test-dir build --output-on-failure --repeat until-fail:30 -E architecture_policy
       - name: Annotate failing CTest output
         if: failure()
         run: python3 tools/annotate_ctest.py build
-      - name: Temporary retrieve previous CTest failure details
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python3 - <<'PYDIAG'
-          import subprocess,re
-          for job in [121308392930,121310220420,121311816184]:
-              result=subprocess.run(['gh','api','--allow-escape-sequences',f'repos/carlaparlor/simplicity/actions/jobs/{job}/logs'],capture_output=True,text=True)
-              if result.returncode:
-                  print('::notice title=previous-log-retrieval::'+result.stderr[-3000:].replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
-                  raise SystemExit(result.returncode)
-              lines=re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]','',result.stdout).splitlines()
-              hits=[i for i,line in enumerate(lines) if 'Traceback' in line or 'FAIL:' in line or 'failed:' in line or '***Failed' in line or 'ERROR:' in line or 'AssertionError' in line or 'AddressSanitizer:' in line]
-              for n,i in enumerate(hits[:3]):
-                  text='\n'.join(lines[max(0,i-2):i+25])[-3500:]
-                  print('::notice title=previous-'+str(job)+'-'+str(n)+'::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
-          PYDIAG
       - name: Enforce 95% lines and 90% branches
         run: >-
           .venv/bin/gcovr --root . --filter 'modules/'

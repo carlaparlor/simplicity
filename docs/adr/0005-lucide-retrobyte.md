@@ -23,7 +23,11 @@ retrieve a real Windows render for inspection, then are removed (ADR 0004).
 Desktop readability/DPI/accessibility and actual licensing negotiation remain
 human acceptance tasks; tests and development artifacts do not clear rights.
 
-A coverage-run CTest failure with inaccessible Azure logs requires temporary
-read-only Actions permission on the coverage job to retrieve that exact prior job
-log into bounded GitHub annotations. It does not bypass a test or alter thresholds;
-remove the permission/retrieval step after diagnosis. All final gates must pass.
+CI diagnosis revealed Git 2.55 background writers racing temporary fixture cleanup
+(`.git`/`objects` nonempty), not a domain or sanitizer defect. Throwaway policy
+repos explicitly disable automatic maintenance, GC detachment and fsmonitor before
+the first commit; a regression test verifies those settings. Cleanup errors are
+still fatal, never retried/ignored. Real policy assertions remain unchanged.
+Read-only Actions permission and temporary native-render/log retrieval steps were
+removed after diagnosis. Bounded, escaped local failure annotations remain so
+future CI failures can be investigated without external Azure log access.

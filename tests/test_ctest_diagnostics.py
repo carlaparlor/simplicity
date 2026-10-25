@@ -1,6 +1,9 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import subprocess
+import sys
+import tempfile
 
 SPEC = importlib.util.spec_from_file_location('annotate_ctest', Path(__file__).resolve().parents[1] / 'tools/annotate_ctest.py')
 DIAG = importlib.util.module_from_spec(SPEC)
@@ -29,3 +32,16 @@ class CTestDiagnosticsTests(unittest.TestCase):
     def test_many_failed_tests_do_not_overflow_annotations(self):
         lines = DIAG.annotations(''.join(f'{n}/20 Testing: test{n}\nTest Failed.\n' for n in range(20)))
         self.assertEqual(len(lines), 8)
+
+    def test_cli_handles_ctest_directory_plain_log_and_missing_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / 'Testing/Temporary/LastTest.log'
+            log.parent.mkdir(parents=True)
+            log.write_text('1/1 Testing: failure\nassertion context\nTest Failed.\n')
+            for path, expected in ((root, 'assertion context'), (log, 'assertion context'),
+                                   (root / 'missing.log', 'Test log unavailable')):
+                result = subprocess.run([sys.executable, str(SPEC.origin), str(path)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0)
+                self.assertIn(expected, result.stdout)
+                self.assertEqual(len(result.stdout.splitlines()), 1)
