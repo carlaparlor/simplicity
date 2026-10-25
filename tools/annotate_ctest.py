@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Expose failed CTest output through check annotations; never decides gate status."""
+"""Expose failed test output through check annotations; never decides gate status."""
 from pathlib import Path
 import re
 import sys
@@ -13,6 +13,8 @@ def annotations(text: str) -> list[str]:
 
 
 if __name__ == '__main__':
-    path = Path(sys.argv[1]) / 'Testing/Temporary/LastTest.log'
+    path = Path(sys.argv[1])
+    if path.is_dir():
+        path = path / 'Testing/Temporary/LastTest.log'
     text = path.read_text(errors='replace') if path.exists() else 'CTest log unavailable; inspect the preceding failed step.'
     print('\n'.join(annotations(text)))

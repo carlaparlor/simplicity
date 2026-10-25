@@ -66,3 +66,10 @@ also failed, so both Linux jobs now annotate their own failing CTest sections
 without relying on Azure downloads. Added four tests for annotation selection,
 command escaping, truncated/crash output and bounds. Temporary repeated native
 startup tests seek reproducible evidence rather than silently rerunning a red gate.
+
+Native startup stress (30 repetitions per native binary) passed locally under
+ASan/UBSan and in CI. The log retrieval failure is gh CLI's explicit ANSI-output
+protection, not a coverage test failure; opt in for these known build logs, then
+strip ANSI before annotation. Retrieve the exact original coverage, ASan and
+Python-policy failures. Python-policy logs are now piped through tee with explicit
+bash/pipefail and annotated on failure; failed tests still fail the step/job.
