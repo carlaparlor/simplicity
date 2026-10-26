@@ -13,6 +13,8 @@ public:
     ~WorkspaceView() override;
     void paint(juce::Graphics&) override;
     void resized() override;
+    void mouseDown(const juce::MouseEvent&) override;
+    void mouseDrag(const juce::MouseEvent&) override;
     bool keyPressed(const juce::KeyPress&) override;
     void perform(ShellAction);
     [[nodiscard]] const Workspace& workspace() const noexcept;

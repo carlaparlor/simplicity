@@ -3,6 +3,11 @@
 #include <cmath>
 
 namespace simplicity::ui {
+void playheadMarker(juce::Graphics& g,juce::Rectangle<float> r){
+    if(r.isEmpty())return;
+    juce::Path marker;marker.addTriangle(r.getX(),r.getY(),r.getRight(),r.getY(),r.getCentreX(),r.getBottom());g.setColour(foreground);g.fillPath(marker);
+}
+
 void label(juce::Graphics& g, const juce::String& s, juce::Rectangle<int> r, float height, juce::Colour colour, bool strong) {
     g.setColour(colour); g.setFont(font(height, strong)); g.drawText(s, r, juce::Justification::centredLeft, true);
 }
