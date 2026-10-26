@@ -7,7 +7,7 @@ Track/source colours are local identities, never a global accent. The executable
 icon is the actual font's lowercase s on charcoal. Commercial asset rights remain
 unresolved; development use is owner-authorized, not a public release clearance.
 
-A 56 px project/transport bar and a separate 36 px playlist tool/navigation bar; no oversized internal brand and no inspector. Files on the
+One compact transport; no oversized internal brand and no inspector. Files on the
 left, reusable **Patterns on the right**, playlist in the middle. Mixer, channel
 rack and piano roll share the bottom dock. Drag the three panel boundaries to
 resize. Track names and M/S are separate rows with at least 8 px clearance. Browser/pattern widths are bounded and adapt at the minimum window size.
@@ -28,9 +28,8 @@ button/fader gradients, fader caps and pan knobs provide depth without fake mate
   including source repeats and trimmed/sliced offsets; empty sources have no notes.
 - **Editing:** draw/paint/select/delete/mute/slice/zoom tools; move clips across lanes,
   drag the right edge to trim, Shift-drag linked copies, Alt-drag bypasses movement
-  snap. Paint places source-length repeats in one undo step. Right-click opens a clip menu (edit, duplicate, make unique, mute, delete).
-  Lane headers and mixer-strip backgrounds have lane menus; empty playlist lanes
-  offer placement and lane creation. Cancel leaves music and selection untouched. Double-click opens its piano roll. Source edits propagate to linked clips.
+  snap. Paint places source-length repeats in one undo step. Right-click removes a
+  clip. Double-click opens its piano roll. Source edits propagate to linked clips.
 - **Channel rack:** four MIDI editing slots (Kick/Snare/Hat/Synth), sixteenth-note
   step toggles. Slots are not hosted instruments and are independent of playlist
   lanes. **Piano:** choose a slot, draw a note with dragged duration; drag an existing
@@ -82,13 +81,8 @@ FL-specific per-lane height overrides are not implemented.
 Native text editing owns its input; piano/mixer focus does not select playlist
 tools or duplicate/delete playlist clips. Unsupported commands, including plugin
 picker, recording and piano-copy shortcuts, are not mapped to unrelated actions.
-Lane deletion is explicit in the lane context menu; Delete without a clip does
-not silently delete a lane. The Project menu contains New/Demo, undo/redo, Help and an unavailable-services
-item; View owns panel visibility. No dead Record button, duplicate Help/Preview,
-undo/redo/delete/add or redundant +/- zoom buttons clutter the two top bars.
-Tool and snap belong to the playlist row; zoom stays in its scroll handles.
-Mixer/Rack/Piano are grouped as bottom view tabs. The ruler has a downward
-triangular playhead aligned with its vertical line; left click/drag seeks.
+An explicit toolbar Remove can remove a selected lane; Delete without a clip does
+not silently delete a lane. The Project menu contains New/Demo and disabled Save.
 
 ## Honest boundaries
 All changes exist **only in memory**. Closing loses them. No project save/recovery,

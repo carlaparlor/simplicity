@@ -129,14 +129,3 @@ playlist tests exercise scroll/zoom/pan bindings without changing undo/selection
 Piano tests create and erase notes through zoomed coordinates and verify undo
 restores the note rather than a view change. Existing file/installer/coverage gates
 are unchanged. Manual pointer feel, DPI and OS accessibility acceptance still apply.
-
-## Consolidated chrome / context regressions
-Windows tests inspect Project/View/clip/lane menu IDs and enabled state, dispatch
-real menu commands, reject cancel/unknown/invalid/stale targets, verify context
-mute/unique/edit and undo, open/dismiss a native popup and ensure clip right-click
-cannot erase/move. The 56 px toolbar's visible controls must be pairwise disjoint
-at 1080–1920 widths; playlist tools/snap/zoom must remain separated at both panel
-width extremes. Retired toolbar component IDs must not exist. Native triangle
-raster tests check taper/centre/transparency; ruler seek/render is tested under
-horizontal zoom without an undo entry. Manual menu pointer/keyboard navigation,
-DPI/high contrast and visual taste still require user acceptance.

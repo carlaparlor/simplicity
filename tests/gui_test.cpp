@@ -98,10 +98,6 @@ int main(int argc, char** argv) {
     preview.notes.clear();juce::Image blank(juce::Image::ARGB,120,48,true);
     {juce::Graphics g(blank);drawPatternNotes(g,preview,{0,0,120,48},0,8,ui::foreground);}
     for(int y=0;y<48;++y)for(int x=0;x<120;++x)CHECK(blank.getPixelAt(x,y).getAlpha()==0);
-    juce::Image triangle(juce::Image::ARGB,24,20,true);
-    {juce::Graphics g(triangle);ui::playheadMarker(g,{6,2,12,12});ui::playheadMarker(g,{});}
-    int top=0,bottom=0;for(int x=0;x<24;++x){if(triangle.getPixelAt(x,3).getAlpha()>128)++top;if(triangle.getPixelAt(x,11).getAlpha()>128)++bottom;}
-    CHECK(top>=9);CHECK(bottom>0 && bottom<top/2);CHECK(triangle.getPixelAt(12,7).getAlpha()>200);CHECK(triangle.getPixelAt(2,7).getAlpha()==0);
     simplicity::WorkspaceView view;
     juce::DocumentWindow window("Simplicity GUI tests", juce::Colours::black, 0);
     window.setContentNonOwned(&view, false); window.centreWithSize(1440, 900); window.setVisible(true);
@@ -129,6 +125,24 @@ int main(int argc, char** argv) {
     const auto error = view.runSmokeTest();
     if (error.isNotEmpty()) { std::cerr << error << '\n'; return 1; }
     CHECK(view.workspace().tracks().size() == 4);
+    // Revert regression: the pre-PR8 bars/actions and right-click erase are back.
+    for(const char* id:{"add-track","add-clip","duplicate","remove"}) {
+        const auto* control=view.findChildWithID(id);CHECK(control!=nullptr);CHECK(control->isVisible());
+    }
+    std::function<juce::Component*(juce::Component&)> findPlaylist=[&](juce::Component& component)->juce::Component*{
+        if(component.getComponentID()=="playlist")return &component;
+        for(int n=0;n<component.getNumChildComponents();++n)if(auto* found=findPlaylist(*component.getChildComponent(n)))return found;
+        return nullptr;
+    };
+    auto* playlist=findPlaylist(view);CHECK(playlist!=nullptr);
+    const int restoredClip=view.workspace().tracks()[0].clips[0].id;
+    const juce::Point<float> erasePoint{10,20};
+    const juce::MouseEvent eraseEvent(juce::Desktop::getInstance().getMainMouseSource(),erasePoint,juce::ModifierKeys::rightButtonModifier,1.0F,0,0,0,0,playlist,playlist,juce::Time::getCurrentTime(),erasePoint,juce::Time::getCurrentTime(),1,false);
+    playlist->mouseDown(eraseEvent);playlist->mouseUp(eraseEvent);
+    CHECK(view.workspace().clip(restoredClip)==nullptr);
+    view.perform(ShellAction::undo);CHECK(view.workspace().clip(restoredClip)!=nullptr);
+    view.perform(ShellAction::demo);
+
     auto image = view.createComponentSnapshot(view.getLocalBounds());
     CHECK(image.isValid()); CHECK(image.getWidth() == 1440); CHECK(image.getHeight() == 900);
     // Real rendered palette / blank-window regression checks (not a mockup).
@@ -136,7 +150,7 @@ int main(int argc, char** argv) {
     CHECK(image.getPixelAt(5, 65) == ui::panel);
     CHECK(image.getPixelAt(1438, 500) == ui::panel); // Patterns is explicitly the rightmost dock.
     // Toolbar/browser must remain neutral even when controls are active. Track/clip colours are allowed below.
-    for(int y=0;y<56;++y)for(int x=0;x<image.getWidth();++x) {
+    for(int y=0;y<62;++y)for(int x=0;x<image.getWidth();++x) {
         const auto pixel=image.getPixelAt(x,y);
         CHECK(pixel.getRed()==pixel.getGreen()); CHECK(pixel.getGreen()==pixel.getBlue());
     }
