@@ -15,8 +15,6 @@ juce::FontOptions font(float height = 14.0F, bool strong = false);
 void label(juce::Graphics&, const juce::String&, juce::Rectangle<int>, float height = 14.0F,
            juce::Colour colour = foreground, bool strong = false);
 void glyph(juce::Graphics&, Glyph, juce::Rectangle<float>, juce::Colour);
-// Downward ruler marker; its tip aligns with the timeline playhead.
-void playheadMarker(juce::Graphics&,juce::Rectangle<float>);
 class IconButton final : public juce::TextButton {
 public:
     IconButton(const juce::String& name, Glyph symbol, bool caption = false);
