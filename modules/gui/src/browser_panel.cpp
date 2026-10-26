@@ -1,79 +1,42 @@
 #include <simplicity/browser_panel.h>
 
 namespace simplicity {
-namespace {
-const char* templateNames[]{"Empty track", "Pattern track", "Rhythm track", "Texture track"};
-const ui::Glyph templateIcons[]{ui::Glyph::tracks, ui::Glyph::pattern, ui::Glyph::rhythm, ui::Glyph::texture};
+BrowserPanel::BrowserPanel():juce::FileFilter("Samples and MIDI") {
+    setName("Sound browser");
+    for(auto* c:std::initializer_list<juce::Component*>{&search,&type,&tree,&path,&details,&documents,&home,&up,&add})addAndMakeVisible(c);
+    search.setName("Search library folder");search.setFont(ui::font());search.setTextToShowWhenEmpty("Search folder",ui::secondary);search.setBorder({1,1,1,1});search.setIndents(31,7);search.onTextChange=[this]{refresh();};
+    type.setName("Library file type");type.addItem("All sounds",1);type.addItem("Samples",2);type.addItem("MIDI",3);type.setSelectedId(1,juce::dontSendNotification);type.onChange=[this]{refresh();};
+    path.setFont(ui::font());path.setName("Current library folder");details.setFont(ui::font());details.setName("Selected file details");details.setColour(juce::Label::textColourId,ui::secondary);
+    home.onClick=[this]{setRootDirectory(juce::File::getSpecialLocation(juce::File::userHomeDirectory));};
+    documents.onClick=[this]{setRootDirectory(juce::File::getSpecialLocation(juce::File::userDocumentsDirectory));};
+    up.onClick=[this]{setRootDirectory(directory.getDirectory().getParentDirectory());};up.setTooltip("Parent folder");
+    add.onClick=[this]{chooser=std::make_unique<juce::FileChooser>("Add a library folder",directory.getDirectory());auto safe=juce::Component::SafePointer<BrowserPanel>(this);chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectDirectories,[safe](const juce::FileChooser& result){if(safe!=nullptr)safe->setRootDirectory(result.getResult());});};
+    tree.setName("Library files");tree.setRootItemVisible(false);tree.setDefaultOpenness(false);tree.addListener(this);tree.setColour(juce::TreeView::backgroundColourId,ui::background);
+    worker.startThread();setRootDirectory(juce::File::getSpecialLocation(juce::File::userDocumentsDirectory));
 }
-BrowserPanel::BrowserPanel(Workspace& model) : model_(model) {
-    setName("Session browser"); setComponentID("browser-panel");
-    for (auto* c : std::initializer_list<juce::Component*>{&session_, &templatesButton_, &search, &viewport_, &add_}) addAndMakeVisible(c);
-    session_.setComponentID("browser-session"); templatesButton_.setComponentID("browser-templates"); add_.setComponentID("browser-new-track");
-    session_.onClick = [this] { setTemplateTab(false); }; templatesButton_.onClick = [this] { setTemplateTab(true); };
-    session_.setTooltip("Browse and select session tracks"); templatesButton_.setTooltip("Add in-memory track templates; no audio or instruments included");
-    search.setName("Search browser"); search.setComponentID("browser-search"); search.setFont(ui::font(14));
-    search.setTextToShowWhenEmpty("Search", ui::secondary); search.setBorder({1, 1, 1, 1}); search.setIndents(31, 7);
-    search.onTextChange = [this] { updateResults(); };
-    viewport_.setViewedComponent(&content_, false); viewport_.setScrollBarsShown(true, false); viewport_.setScrollBarThickness(6);
-    for (int n = 0; n < Workspace::maxTracks; ++n) {
-        auto* row = rows_.add(new ui::IconButton({}, ui::Glyph::wave, true));
-        row->setComponentID("browser-row-" + juce::String(n)); row->getProperties().set("flat", true); row->onClick = [this, n] { activateResult(n); };
-        content_.addChildComponent(row);
-    }
-    add_.onClick = [this] { if (model_.addTrack("Track " + std::to_string(model_.tracks().size()+1)) && changed) changed(); };
-    add_.setTooltip("Add an empty track"); refresh();
+BrowserPanel::~BrowserPanel(){tree.removeListener(this);chooser.reset();worker.stopThread(-1);}
+bool BrowserPanel::setRootDirectory(const juce::File& root){
+    if(!root.isDirectory())return false;
+    directory.setDirectory(root,true,true);path.setText(root.getFileName(),juce::dontSendNotification);path.setTooltip(root.getFullPathName());details.setText({},juce::dontSendNotification);return true;
 }
-BrowserPanel::~BrowserPanel() { viewport_.setViewedComponent(nullptr, false); }
-void BrowserPanel::setTemplateTab(bool enabled) { templates_ = enabled; search.setText({}, false); viewport_.setViewPosition(0, 0); updateResults(); }
-void BrowserPanel::setQuery(const juce::String& query) { search.setText(query, false); updateResults(); }
-void BrowserPanel::refresh() { add_.setEnabled(model_.tracks().size() < Workspace::maxTracks); updateResults(); }
-void BrowserPanel::updateResults() {
-    results_.clear(); const auto q = search.getText().trim();
-    const int count = templates_ ? 4 : static_cast<int>(model_.tracks().size());
-    for (int n = 0; n < count; ++n) {
-        const juce::String name = templates_ ? juce::String(templateNames[n]) : juce::String(model_.tracks()[static_cast<std::size_t>(n)].name);
-        if (name.containsIgnoreCase(q)) results_.push_back(n);
-    }
-    for (int n = 0; n < rows_.size(); ++n) {
-        auto* row = rows_[n]; const bool visible = n < resultCount(); row->setVisible(visible);
-        if (!visible) continue;
-        const int index = results_[static_cast<std::size_t>(n)];
-        const auto name = templates_ ? juce::String(templateNames[index]) : juce::String(model_.tracks()[static_cast<std::size_t>(index)].name);
-        row->setButtonText(name); row->setName(name); row->symbol = templates_ ? templateIcons[index] : ui::Glyph::wave;
-        row->setToggleState(!templates_ && model_.selectedTrack() == index, juce::dontSendNotification);
-        row->setEnabled(!templates_ || model_.tracks().size() < Workspace::maxTracks);
-        row->setTooltip(templates_ ? "Add " + name + " (visual template only)" : "Select " + name);
-    }
-    session_.setToggleState(!templates_, juce::dontSendNotification); templatesButton_.setToggleState(templates_, juce::dontSendNotification);
-    resized(); repaint();
+void BrowserPanel::setCategory(int value){type.setSelectedId(juce::jlimit(1,3,value),juce::sendNotificationSync);}
+void BrowserPanel::setQuery(const juce::String& q){search.setText(q,false);refresh();}
+void BrowserPanel::refresh(){{const juce::ScopedLock lock(filterLock);query=search.getText().trim();category=type.getSelectedId();}directory.refresh();}
+bool BrowserPanel::acceptsFile(const juce::File& f) const {
+    const juce::ScopedLock lock(filterLock);
+    const auto ext=f.getFileExtension().toLowerCase();
+    const bool midi=ext==".mid" || ext==".midi";
+    const bool audio=ext==".wav" || ext==".aif" || ext==".aiff" || ext==".flac" || ext==".ogg" || ext==".mp3";
+    return (category==3?midi:category==2?audio:(audio||midi)) && f.getFileName().containsIgnoreCase(query);
 }
-bool BrowserPanel::activateResult(int row) {
-    if (row < 0 || row >= resultCount()) return false;
-    const int index = results_[static_cast<std::size_t>(row)];
-    bool ok = false;
-    if (!templates_) ok = model_.selectTrack(index);
-    else {
-        ok = model_.addTrack(templateNames[index]);
-        if (ok && index > 0) {
-            const double oldPosition = model_.position(); model_.seek(0);
-            const int blocks = index == 2 ? 4 : index == 3 ? 2 : 1;
-            for (int n = 0; n < blocks; ++n) { model_.seek(n * 4.0); model_.addClip(); }
-            model_.seek(oldPosition);
-        }
-    }
-    if (ok && changed) changed();
-    return ok;
+bool BrowserPanel::isFileSuitable(const juce::File& f) const{return acceptsFile(f);}
+bool BrowserPanel::isDirectorySuitable(const juce::File&) const{return true;}
+void BrowserPanel::selectionChanged(){const auto f=tree.getSelectedFile();details.setText(f.isDirectory()?"Folder":f.getFileExtension().toUpperCase()+"  /  "+juce::File::descriptionOfSizeInBytes(f.getSize()),juce::dontSendNotification);details.setTooltip(f.getFullPathName());}
+void BrowserPanel::fileDoubleClicked(const juce::File& f){if(f.isDirectory())setRootDirectory(f);else details.setText("Import / audition not connected",juce::dontSendNotification);}
+void BrowserPanel::resized(){
+    const int w=getWidth();search.setBounds(10,40,w-20,32);type.setBounds(10,83,w-20,28);
+    documents.setBounds(8,146,106,29);home.setBounds(8,181,106,29);add.setBounds(8,getHeight()-46,106,30);
+    path.setBounds(124,116,w-166,28);up.setBounds(w-38,116,26,27);tree.setBounds(120,148,w-128,getHeight()-200);details.setBounds(124,getHeight()-46,w-136,35);
 }
-void BrowserPanel::resized() {
-    session_.setBounds(12, 12, 98, 32); templatesButton_.setBounds(114, 12, getWidth()-126, 32);
-    search.setBounds(12, 55, getWidth()-24, 33);
-    viewport_.setBounds(8, 106, getWidth()-16, std::max(0, getHeight()-164));
-    content_.setSize(viewport_.getWidth()-6, std::max(viewport_.getHeight(), resultCount()*42));
-    for (int n = 0; n < rows_.size(); ++n) rows_[n]->setBounds(4, n*42, content_.getWidth()-8, 37);
-    add_.setBounds(12, getHeight()-44, getWidth()-24, 32);
-}
-void BrowserPanel::paint(juce::Graphics& g) {
-    g.fillAll(ui::panel); g.setColour(ui::border); g.drawVerticalLine(getWidth()-1, 0, static_cast<float>(getHeight()));
-    if (results_.empty()) ui::label(g, search.getText().isEmpty() ? "No tracks" : "No matches", {23, 120, getWidth()-46, 28},14, ui::secondary);
-}
+void BrowserPanel::paint(juce::Graphics& g){g.fillAll(ui::panel);ui::label(g,"BROWSER",{14,7,getWidth()-28,26});ui::label(g,"PLACES",{14,116,96,25},12,ui::secondary);g.setColour(ui::border);g.drawVerticalLine(117,117,static_cast<float>(getHeight()-12));g.drawVerticalLine(getWidth()-1,0,static_cast<float>(getHeight()));}
 }

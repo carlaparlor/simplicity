@@ -29,3 +29,8 @@ if(TARGET simplicity_gui)
   add_test(NAME gui_controls_and_render COMMAND gui_test ${PROJECT_BINARY_DIR}/screenshots/workspace.png)
   set_tests_properties(gui_controls_and_render PROPERTIES TIMEOUT 60)
 endif()
+
+add_executable(pattern_test pattern_test.cpp)
+target_link_libraries(pattern_test PRIVATE simplicity_shell)
+simplicity_strict(pattern_test)
+add_test(NAME pattern_test COMMAND pattern_test)

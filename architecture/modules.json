@@ -40,7 +40,8 @@
       "dependencies": [],
       "external": [],
       "tests": [
-        "tests/workspace_test.cpp"
+        "tests/workspace_test.cpp",
+        "tests/pattern_test.cpp"
       ]
     },
     "gui": {

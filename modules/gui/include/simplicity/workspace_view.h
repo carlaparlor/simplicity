@@ -7,7 +7,7 @@ namespace simplicity {
 enum class ShellAction { playPause, stop, newSession, demo, addTrack, addClip, remove,
                          duplicate, undo, redo, browser, mixer, help };
 // Message-thread-only composition root. Owns UI state, never touches an audio callback.
-class WorkspaceView final : public juce::Component, private juce::KeyListener {
+class WorkspaceView final : public juce::Component, public juce::DragAndDropContainer, private juce::KeyListener {
 public:
     WorkspaceView();
     ~WorkspaceView() override;
