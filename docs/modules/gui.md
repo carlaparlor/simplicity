@@ -2,8 +2,8 @@
 
 ## Responsibility
 Native JUCE workspace composition: neutral dark theme, compact transport,
-scrollable arrangement/clip gestures, inline track controls, searchable session/
-template browser, mixer,
+scrollable arrangement/clip gestures, inline track controls, asynchronous filesystem discovery, right-hand reusable
+patterns, step/piano editor and tactile mixer,
 help overlay and keyboard shortcuts. Owns a shell Workspace, never audio state.
 The default is an explicitly illustrative demo, not fabricated recording/audio.
 Unimplemented recording is disabled; saving explains its absence. Panels toggle;
@@ -21,8 +21,9 @@ Look-and-feel lifetime covers all child components. No audio callback exists her
 
 ## Tests
 `tests/gui_test.cpp` renders actual JUCE controls/windows, invokes control callbacks,
-checks track rename/mute/solo/level bindings, browser filtering/templates/navigation/
-limits/undo, vector and app icons, neutral palette, and reclaimed resize layouts at 1080x640, 1440x900 and 1920x1080, and
+checks track rename/mute/solo/level/pan bindings, temporary-folder filtering and
+navigation, pattern/unique/step/piano duration bindings, source-derived previews,
+limits/undo, vector and app icons, neutral palette, and dock resize layouts at 1080x640, 1440x900 and 1920x1080, and
 writes a real PNG screenshot. The installed application has a timed --smoke-test
 mode writing a JSON report; installer/portable lifecycle tests exercise it.
 Internal GCC coverage includes domain/adapter/shell, not Windows-only rendering.
@@ -38,14 +39,25 @@ fallback faces remain available for missing glyphs. Invalid/empty icon IDs draw
 nothing. No synthetic bold or installed font is required. Asset/license details
 and unresolved font rights are in docs/dependencies.md.
 
-BrowserPanel owns tab/search/scroll components and borrows the composition root
-Workspace. Its optional changed callback runs synchronously after a successful
-selection/addition; the owner refreshes views. Invalid rows/cap additions return
-false without mutation. Row buttons are preallocated to avoid deleting a live
-callback during synchronous refresh. Components/look-and-feel are message-thread
-only; callers own their lifetime. No inspector remains.
+BrowserPanel owns its native tree/search/category/chooser and DirectoryContentsList,
+not Workspace. Filter query/category are owned copies under CriticalSection; worker
+callbacks never read UI components. The TimeSliceThread is joined before member
+teardown; async chooser callbacks use SafePointer. PatternPanel/PatternEditor borrow
+Workspace and invoke their synchronous changed/edit callbacks after mutation. Sources
+are not instruments; lane level/pan is not an audio graph. All component/look-and-feel
+lifetime and painting remains message-thread-only; no inspector.
 
 Native components are centralized; shell commands are
 separate from painting. Add real media, devices, persistence, routing and plugin
 hosting as dedicated services/modules later. Do not add fake working controls or
 claim this shell matches established DAWs' production audio capabilities.
+
+## Pattern-first revision
+BrowserPanel now owns a background directory list and native filesystem tree;
+category/query filtering operates on files in expanded folders. Explicit native
+folder choice, no invented library content or fake audition/import. PatternPanel
+owns reusable source selection/actions on the right. PatternEditor renders/edits
+actual shell notes in step/piano modes in the bottom dock. All callbacks run on
+the message thread, borrow Workspace, and refresh only after operations finish.
+Painter geometry is not musical state. Contextual FL-style core commands replace
+B/M/Ctrl D workspace-global bindings; text editors retain typing ownership.

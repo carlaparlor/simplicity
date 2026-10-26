@@ -42,6 +42,10 @@ class PolicyFixture(unittest.TestCase):
 
 
 class ArchitectureTests(PolicyFixture):
+    def test_pattern_editor_cannot_leak_into_engine(self):
+        self.write("modules/engine/src/engine.cpp", "#include <simplicity/pattern_panel.h>\n")
+        self.rejected("undeclared dependency")
+
     def test_valid_repository(self):
         self.assertEqual(policy.validate(self.root), [])
 

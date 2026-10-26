@@ -36,6 +36,8 @@ public:
     void fillTextEditorBackground(juce::Graphics&, int, int, juce::TextEditor&) override;
     void drawTextEditorOutline(juce::Graphics&, int, int, juce::TextEditor&) override;
     void drawLinearSlider(juce::Graphics&, int, int, int, int, float, float, float, juce::Slider::SliderStyle, juce::Slider&) override;
+    void drawFileBrowserRow(juce::Graphics&,int,int,const juce::File&,const juce::String&,juce::Image*,const juce::String&,const juce::String&,bool,bool,int,juce::DirectoryContentsDisplayComponent&) override;
+    void drawRotarySlider(juce::Graphics&,int,int,int,int,float,float,float,juce::Slider&) override;
     juce::Button* createDocumentWindowButton(int) override;
     void drawDocumentWindowTitleBar(juce::DocumentWindow&, juce::Graphics&, int, int, int, int, const juce::Image*, bool) override;
 private:

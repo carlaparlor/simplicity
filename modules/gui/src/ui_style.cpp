@@ -1,5 +1,6 @@
 #include <simplicity/ui_style.h>
 #include <algorithm>
+#include <cmath>
 
 namespace simplicity::ui {
 void label(juce::Graphics& g, const juce::String& s, juce::Rectangle<int> r, float height, juce::Colour colour, bool strong) {
@@ -40,8 +41,12 @@ void Look::drawButtonBackground(juce::Graphics& g, juce::Button& b, const juce::
     const bool primary = static_cast<bool>(b.getProperties().getWithDefault("primary", false));
     const bool flat = static_cast<bool>(b.getProperties().getWithDefault("flat", false));
     const auto r = b.getLocalBounds().toFloat().reduced(0.5F);
-    g.setColour(b.getToggleState() ? (primary ? foreground : selected) : (down ? selected : over ? raised.brighter(0.12F) : flat ? juce::Colours::transparentBlack : raised));
-    g.fillRoundedRectangle(r, cornerRadius);
+    const auto colour=b.getToggleState() ? (primary?foreground:selected) : (down?selected:over?raised.brighter(0.12F):raised);
+    if(!flat || over || b.getToggleState()) {
+        g.setColour(juce::Colours::black.withAlpha(0.5F));g.fillRoundedRectangle(r.translated(0,1),cornerRadius);
+        g.setGradientFill(juce::ColourGradient(colour.brighter(down?0.0F:0.12F),0,0,colour.darker(down?0.25F:0.08F),0,r.getBottom(),false));g.fillRoundedRectangle(r,cornerRadius);
+        g.setColour(border.brighter(down?0.0F:0.2F));g.drawRoundedRectangle(r,cornerRadius,0.75F);
+    }
     if (b.hasKeyboardFocus(false)) { g.setColour(focus); g.drawRoundedRectangle(r.reduced(1), cornerRadius, 1); }
 }
 void Look::drawButtonText(juce::Graphics& g, juce::TextButton& b, bool, bool) {
@@ -66,12 +71,26 @@ void Look::drawLinearSlider(juce::Graphics& g, int x, int y, int w, int h, float
     if (style == juce::Slider::LinearVertical) {
         const float cx = static_cast<float>(x+w/2); g.setColour(background); g.fillRoundedRectangle(cx-2, static_cast<float>(y), 4, static_cast<float>(h), 2);
         g.setColour(secondary); g.fillRect(cx-1, pos, 2.0F, static_cast<float>(y+h)-pos);
-        g.setColour(foreground); g.fillRoundedRectangle(cx-10, pos-3, 20, 6, 2);
+        g.setColour(juce::Colours::black.withAlpha(0.8F));g.fillRoundedRectangle(cx-12,pos-5,26,15,2);
+        g.setGradientFill(juce::ColourGradient(foreground,cx,pos-7,secondary,cx,pos+6,false));g.fillRoundedRectangle(cx-12,pos-7,24,13,2);
+        g.setColour(border);g.drawHorizontalLine(static_cast<int>(pos),cx-8,cx+8);
+
     } else {
         const float cy = static_cast<float>(y+h/2); g.setColour(background); g.fillRoundedRectangle(static_cast<float>(x), cy-2, static_cast<float>(w), 4, 2);
         g.setColour(secondary); g.fillRect(static_cast<float>(x), cy-1, std::max(0.0F, pos-static_cast<float>(x)), 2.0F);
         g.setColour(foreground); g.fillRoundedRectangle(pos-3, cy-7, 6, 14, 2);
     }
+}
+void Look::drawFileBrowserRow(juce::Graphics& g,int w,int h,const juce::File&,const juce::String& name,juce::Image*,const juce::String&,const juce::String&,bool folder,bool active,int,juce::DirectoryContentsDisplayComponent&){
+    if(active)g.fillAll(selected);
+    glyph(g,folder?Glyph::folder:Glyph::document,{3,static_cast<float>(h-18)/2,18,18},secondary);
+    label(g,name,{27,0,w-30,h},14,active?foreground:secondary);
+}
+void Look::drawRotarySlider(juce::Graphics& g,int x,int y,int w,int h,float value,float start,float end,juce::Slider&) {
+    const auto r=juce::Rectangle<float>(static_cast<float>(x),static_cast<float>(y),static_cast<float>(w),static_cast<float>(h)).reduced(3);
+    g.setColour(background);g.fillEllipse(r.translated(0,2));
+    g.setGradientFill(juce::ColourGradient(selected.brighter(0.3F),r.getX(),r.getY(),raised,r.getX(),r.getBottom(),false));g.fillEllipse(r);
+    g.setColour(focus);const float a=start+value*(end-start);const auto centre=r.getCentre();g.drawLine(centre.x,centre.y,centre.x+std::sin(a)*r.getWidth()*0.35F,centre.y-std::cos(a)*r.getHeight()*0.35F,2);
 }
 namespace {
 class WindowButton final : public juce::Button {

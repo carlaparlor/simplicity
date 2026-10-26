@@ -1,6 +1,7 @@
 #include <simplicity/workspace_view.h>
 #include <simplicity/ui_style.h>
 #include <simplicity/browser_panel.h>
+#include <simplicity/pattern_panel.h>
 #include <simplicity/application_icon.h>
 #include "test_support.h"
 
@@ -81,11 +82,20 @@ int main(int argc, char** argv) {
     ui::IconButton button("Play",ui::Glyph::play); button.setLookAndFeel(&look); button.setSize(32,32);
     CHECK(button.getName()=="Play"); CHECK(button.getTooltip()=="Play");
     auto normal=button.createComponentSnapshot(button.getLocalBounds());
-    CHECK(normal.getPixelAt(2,16)==ui::raised);
+    CHECK(normal.getPixelAt(16,2).getRed()>normal.getPixelAt(16,29).getRed());
+    CHECK(normal.getPixelAt(2,16).getRed()==normal.getPixelAt(2,16).getBlue());
     button.setToggleState(true,juce::dontSendNotification);
     auto selected=button.createComponentSnapshot(button.getLocalBounds());
-    CHECK(selected.getPixelAt(2,16)==ui::selected);
+    CHECK(selected.getPixelAt(2,16).getRed()>normal.getPixelAt(2,16).getRed());
     button.setLookAndFeel(nullptr);
+    // Previews must be a function of stored notes, including repeats/cropped tails.
+    Pattern preview;preview.length=384;preview.notes.push_back({0,96,60,3,100});
+    juce::Image notes(juce::Image::ARGB,120,48,true);
+    {juce::Graphics g(notes);drawPatternNotes(g,preview,{0,0,120,48},0,8,ui::foreground);}
+    CHECK(notes.getPixelAt(2,41).getAlpha()>200);CHECK(notes.getPixelAt(62,41).getAlpha()>200);CHECK(notes.getPixelAt(32,41).getAlpha()==0);
+    preview.notes.clear();juce::Image blank(juce::Image::ARGB,120,48,true);
+    {juce::Graphics g(blank);drawPatternNotes(g,preview,{0,0,120,48},0,8,ui::foreground);}
+    for(int y=0;y<48;++y)for(int x=0;x<120;++x)CHECK(blank.getPixelAt(x,y).getAlpha()==0);
     simplicity::WorkspaceView view;
     juce::DocumentWindow window("Simplicity GUI tests", juce::Colours::black, 0);
     window.setContentNonOwned(&view, false); window.centreWithSize(1440, 900); window.setVisible(true);
@@ -97,7 +107,7 @@ int main(int argc, char** argv) {
     // Real rendered palette / blank-window regression checks (not a mockup).
     CHECK(image.getPixelAt(5, 5) == ui::panel);
     CHECK(image.getPixelAt(5, 65) == ui::panel);
-    CHECK(image.getPixelAt(1438, 500) == ui::background || image.getPixelAt(1438, 500) == juce::Colour(0xff1b1b1b));
+    CHECK(image.getPixelAt(1438, 500) == ui::panel); // Patterns is explicitly the rightmost dock.
     // Toolbar/browser must remain neutral even when controls are active. Track/clip colours are allowed below.
     for(int y=0;y<62;++y)for(int x=0;x<image.getWidth();++x) {
         const auto pixel=image.getPixelAt(x,y);

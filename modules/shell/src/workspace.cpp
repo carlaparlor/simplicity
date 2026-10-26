@@ -17,13 +17,14 @@ void Workspace::remember() {
 void Workspace::newSession() { remember(); state_ = {}; stop(); }
 void Workspace::resetDemo() {
     remember(); state_ = {}; state_.title = "Late hours";
+    seedPatterns();
     const char* names[] = {"Drums", "Bass", "Keys", "Atmosphere"};
     for (int i = 0; i < 4; ++i) {
         SketchTrack track; track.name = names[i]; track.colour = i;
         const double length = i == 2 ? 32.0 : 16.0;
         for (double beat = i == 1 ? 16.0 : 0.0; beat < duration; beat += length) {
             if (i == 3 && beat < 32.0) continue;
-            track.clips.push_back({state_.nextId++, std::string(names[i]) + " sketch", beat, length});
+            track.clips.push_back({state_.nextId++, beat, length, i+1, false});
         }
         state_.tracks.push_back(std::move(track));
     }
@@ -72,6 +73,10 @@ bool Workspace::setLevel(double level) {
     if (state_.tracks[static_cast<std::size_t>(state_.selectedTrack)].level == level) return false;
     remember(); state_.tracks[static_cast<std::size_t>(state_.selectedTrack)].level = level; return true;
 }
+bool Workspace::setPan(double pan) {
+    if(!hasTrack() || !std::isfinite(pan) || pan < -1 || pan > 1 || state_.tracks[static_cast<std::size_t>(state_.selectedTrack)].pan==pan) return false;
+    remember(); state_.tracks[static_cast<std::size_t>(state_.selectedTrack)].pan=pan; return true;
+}
 bool Workspace::toggleMute() {
     if (!hasTrack()) return false;
     remember(); auto& track = state_.tracks[static_cast<std::size_t>(state_.selectedTrack)]; track.muted = !track.muted; return true;
@@ -86,7 +91,11 @@ bool Workspace::addClip() {
     if (clips.size() >= 64) return false;
     remember(); const double beat = std::clamp(snapped(position_, grid), 0.0, duration - 4);
     state_.selectedClip = state_.nextId++;
-    clips.push_back({state_.selectedClip, "New sketch", beat, 4}); return true;
+    if (state_.activePattern == 0) {
+        state_.patterns.push_back({state_.nextPattern++,384,0,"Pattern 1",{}});
+        state_.activePattern = state_.patterns.back().id;
+    }
+    clips.push_back({state_.selectedClip, beat, 4, state_.activePattern, false}); return true;
 }
 double Workspace::snapped(double beat, double grid) noexcept {
     if (!std::isfinite(beat)) return 0;
@@ -123,7 +132,7 @@ bool Workspace::redo() {
     if (redo_.empty()) return false;
     undo_.push_back(state_); state_ = std::move(redo_.back()); redo_.pop_back(); return true;
 }
-void Workspace::togglePlay() noexcept { if (position_ >= duration) position_ = 0; playing_ = !playing_; }
+void Workspace::togglePlay() noexcept { if (position_ >= transportLength()) position_ = 0; playing_ = !playing_; }
 void Workspace::stop() noexcept { playing_ = false; position_ = 0; }
 bool Workspace::seek(double beat) noexcept {
     if (!std::isfinite(beat)) return false;
@@ -132,9 +141,10 @@ bool Workspace::seek(double beat) noexcept {
 void Workspace::advance(double seconds) noexcept {
     if (!playing_ || !std::isfinite(seconds) || seconds <= 0) return;
     position_ += std::min(seconds, 60.0) * state_.bpm / 60.0;
-    if (position_ >= duration) {
-        if (loop) position_ = std::fmod(position_, duration);
-        else { position_ = duration; playing_ = false; }
+    const double end = transportLength();
+    if (position_ >= end) {
+        if (loop) position_ = std::fmod(position_, end);
+        else { position_ = end; playing_ = false; }
     }
 }
 } // namespace simplicity
