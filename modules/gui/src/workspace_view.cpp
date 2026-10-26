@@ -354,6 +354,7 @@ public:
         mixerView.setVisible(!mixerArea.isEmpty() && dock==0);editor.setVisible(!mixerArea.isEmpty() && dock!=0);if(editor.isVisible())editor.setBounds(mixerArea);
         if(!mixerArea.isEmpty() && dock==0) { mixerView.setBounds(mixerArea.withTrimmedTop(32).withTrimmedLeft(84)); mixerContent.setSize(std::max(mixerView.getWidth(),channels.size()*80),mixerView.getHeight()-7); for(int n=0;n<channels.size();++n) channels[n]->setBounds(n*80,0,80,mixerContent.getHeight()); }
         mixerTab.setBounds(12,statusArea.getY(),66,23);rack.setBounds(84,statusArea.getY(),62,23);piano.setBounds(152,statusArea.getY(),66,23); helpPanel.setBounds(owner.getLocalBounds()); helpPanel.setVisible(helpOpen);
+        owner.repaint(rulerArea); // Zoom may change ticks/marker without a scroll notification.
     }
     void paint(juce::Graphics& g) {
         g.fillAll(bg); g.setColour(panel); g.fillRect(toolbarArea); g.setColour(line); g.drawHorizontalLine(toolbarArea.getBottom()-1,0,static_cast<float>(owner.getWidth()));

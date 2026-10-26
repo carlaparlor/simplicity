@@ -41,3 +41,18 @@ move anything. Try duplicate/mute/unique/delete and undo, plus New/Demo/Help and
 panel choices in menus. Seek in the ruler before/after zoom and check triangle /
 line alignment. Confirm source grid, full mixer colour and name/M-S gap persist.
 Audio, import/audition, recording, plugins and saving remain unavailable.
+
+## Native evidence and artifact access
+[PR #8](https://github.com/carlaparlor/simplicity/pull/8) records current-head gates.
+Windows Debug/Release native tests passed at `8bd1d5f` in
+[run 40408827179](https://github.com/carlaparlor/simplicity/actions/runs/40408827179),
+as did policy, coverage and sanitizers. The final follow-up fixes a stale README
+render link to always point to successful main builds and explicitly invalidates
+the ruler during layout (including zoom without a scroll notification). Its final
+checks must also pass before merge; see the PR evidence comment for that run.
+Local ASan/UBSan: **8/8 passed**, with leak detection; local coverage **283/284
+lines (99.6%), 73/73 functions, 521/532 branches (97.9%)**, thresholds unchanged.
+Native artifacts were generated, but download redirected to storage outside the
+sandbox host allowlist and failed with EOF. No visual screenshot inspection is
+claimed. Download current screenshots / unsigned development installer and portable
+ZIP from the successful run's artifacts; no public release or licensing clearance.
