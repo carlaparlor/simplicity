@@ -74,3 +74,14 @@ controls, Ctrl-wheel zoom, middle-button panning and zoom presets mutate only
 view state; they never add undo entries or alter notes/placements. Editor drawing,
 hit tests, scrolling and gestures must share the same zoom transform. All callbacks
 are synchronous on the message thread; owners outlive their controls.
+
+## Consolidated workspace chrome
+A 56 px global bar owns project identity/menu, one transport cluster and View.
+A 36 px playlist bar owns tool, snap and the existing scroll/zoom controls. No
+add/duplicate/delete/undo/redo/record/help/zoom-step buttons in these bars; commands
+remain in contextual/project/view menus and their documented keyboard bindings.
+Clip and lane menus snapshot explicit targets; cancel/disabled/invalid/stale
+commands cannot mutate the model. Async popup callbacks use SafePointer and a
+UI revision guard. Right-clicking a clip opens its menu, never silently deletes it.
+The ruler's downward triangle and vertical line represent the same beat through
+scroll/zoom; left ruler drag seeks visual transport without adding undo entries.
