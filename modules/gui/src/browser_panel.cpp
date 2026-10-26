@@ -5,13 +5,13 @@ BrowserPanel::BrowserPanel():juce::FileFilter("Samples and MIDI") {
     setName("Sound browser");
     for(auto* c:std::initializer_list<juce::Component*>{&search,&type,&tree,&path,&details,&documents,&home,&up,&add})addAndMakeVisible(c);
     search.setName("Search library folder");search.setFont(ui::font());search.setTextToShowWhenEmpty("Search folder",ui::secondary);search.setBorder({1,1,1,1});search.setIndents(31,7);search.onTextChange=[this]{refresh();};
-    type.setName("Library file type");type.addItem("All sounds",1);type.addItem("Samples",2);type.addItem("MIDI",3);type.setSelectedId(1,juce::dontSendNotification);type.onChange=[this]{refresh();};
+    type.setName("Library file type");type.addItem("All files",1);type.addItem("Samples",2);type.addItem("MIDI",3);type.setSelectedId(1,juce::dontSendNotification);type.onChange=[this]{refresh();};
     path.setFont(ui::font());path.setName("Current library folder");details.setFont(ui::font());details.setName("Selected file details");details.setColour(juce::Label::textColourId,ui::secondary);
     home.onClick=[this]{setRootDirectory(juce::File::getSpecialLocation(juce::File::userHomeDirectory));};
     documents.onClick=[this]{setRootDirectory(juce::File::getSpecialLocation(juce::File::userDocumentsDirectory));};
     up.onClick=[this]{setRootDirectory(directory.getDirectory().getParentDirectory());};up.setTooltip("Parent folder");
     add.onClick=[this]{chooser=std::make_unique<juce::FileChooser>("Add a library folder",directory.getDirectory());auto safe=juce::Component::SafePointer<BrowserPanel>(this);chooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectDirectories,[safe](const juce::FileChooser& result){if(safe!=nullptr)safe->setRootDirectory(result.getResult());});};
-    tree.setName("Library files");tree.setRootItemVisible(false);tree.setDefaultOpenness(false);tree.addListener(this);tree.setColour(juce::TreeView::backgroundColourId,ui::background);
+    tree.setName("Library files");tree.setRootItemVisible(false);tree.setDefaultOpenness(false);tree.addListener(this);tree.setColour(juce::TreeView::backgroundColourId,ui::background);tree.setColour(juce::TreeView::linesColourId,ui::secondary);
     worker.startThread();setRootDirectory(juce::File::getSpecialLocation(juce::File::userDocumentsDirectory));
 }
 BrowserPanel::~BrowserPanel(){tree.removeListener(this);chooser.reset();worker.stopThread(-1);}
@@ -27,7 +27,7 @@ bool BrowserPanel::acceptsFile(const juce::File& f) const {
     const auto ext=f.getFileExtension().toLowerCase();
     const bool midi=ext==".mid" || ext==".midi";
     const bool audio=ext==".wav" || ext==".aif" || ext==".aiff" || ext==".flac" || ext==".ogg" || ext==".mp3";
-    return (category==3?midi:category==2?audio:(audio||midi)) && f.getFileName().containsIgnoreCase(query);
+    return (category==1 || (category==2?audio:midi)) && f.getFileName().containsIgnoreCase(query);
 }
 bool BrowserPanel::isFileSuitable(const juce::File& f) const{return acceptsFile(f);}
 bool BrowserPanel::isDirectorySuitable(const juce::File&) const{return true;}
