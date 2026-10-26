@@ -61,3 +61,16 @@ actual shell notes in step/piano modes in the bottom dock. All callbacks run on
 the message thread, borrow Workspace, and refresh only after operations finish.
 Painter geometry is not musical state. Contextual FL-style core commands replace
 B/M/Ctrl D workspace-global bindings; text editors retain typing ownership.
+
+## Compact clip grid and navigation revision
+Pattern cards use the same clip renderer as the playlist, two columns per row in
+an independently scrolling viewport. Each card retains its source identity,
+keyboard button semantics, selection, double-click edit and drag placement.
+Mixer source colours tint the whole corresponding strip, not a header stripe.
+Track-name and M/S rectangles must have a positive gap at every supported lane height.
+Shared native horizontal range bars support scroll-handle edge zoom and centre
+panning; a vertical drag grip controls playlist lane / piano key height. These
+controls, Ctrl-wheel zoom, middle-button panning and zoom presets mutate only
+view state; they never add undo entries or alter notes/placements. Editor drawing,
+hit tests, scrolling and gestures must share the same zoom transform. All callbacks
+are synchronous on the message thread; owners outlive their controls.

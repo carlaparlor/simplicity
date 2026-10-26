@@ -118,3 +118,14 @@ empty icons, and compares the icon's opaque pixels to the actual native font s
 path. Existing resize/control/shortcut/installer/sanitizer/coverage gates remain.
 Installer tests require both license notices and extract the charcoal icon from
 actual portable/installed executables. These tests do not grant font rights.
+
+## Clip-grid and zoom feedback regressions
+Native GUI tests verify two columns at min/default/max picker widths, odd/empty
+counts, miniature/playlist shared clip raster, full-height mixer colour pixels,
+and an 8 px track-name/M-S gap at minimum/default/maximum lane zoom. The shared
+time bar tests both handle edges, centre pan, invalid ranges, min/max limits,
+callbacks and keyboard navigation; grip tests include drag/reset/keys. Integrated
+playlist tests exercise scroll/zoom/pan bindings without changing undo/selection.
+Piano tests create and erase notes through zoomed coordinates and verify undo
+restores the note rather than a view change. Existing file/installer/coverage gates
+are unchanged. Manual pointer feel, DPI and OS accessibility acceptance still apply.
