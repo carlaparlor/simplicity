@@ -10,7 +10,7 @@ unresolved; development use is owner-authorized, not a public release clearance.
 One compact transport; no oversized internal brand and no inspector. Files on the
 left, reusable **Patterns on the right**, playlist in the middle. Mixer, channel
 rack and piano roll share the bottom dock. Drag the three panel boundaries to
-resize. Browser/pattern widths are bounded and adapt at the minimum window size.
+resize. Track names and M/S are separate rows with at least 8 px clearance. Browser/pattern widths are bounded and adapt at the minimum window size.
 Enter maximizes/restores the playlist. Sunken note grids, edge highlights, restrained
 button/fader gradients, fader caps and pan knobs provide depth without fake materials.
 
@@ -20,7 +20,8 @@ button/fader gradients, fader caps and pan knobs provide depth without fake mate
   audio/MIDI/all-file filters. Folders remain navigable during filtering. No Session/
   Templates, invented sample library or whole-drive recursive search index. Filters
   identify extensions, not valid/decoded media. Double-click folders to navigate.
-- **Reusable patterns:** select a right-hand source then draw into a lane, or drag a
+- **Reusable patterns:** two compact clip cards per row, using the same coloured
+  header, body, note preview and selection border as playlist clips. Select a right-hand source then draw into a lane, or drag a
   source into the playlist. New/clone/rename/delete-unused and Make unique. Placements
   share notes; Make unique copies/rebinds only the selected placement. In-use sources
   cannot be deleted. Playlist thumbnails render stored pitch/onset/duration data,
@@ -32,10 +33,12 @@ button/fader gradients, fader caps and pan knobs provide depth without fake mate
 - **Channel rack:** four MIDI editing slots (Kick/Snare/Hat/Synth), sixteenth-note
   step toggles. Slots are not hosted instruments and are independent of playlist
   lanes. **Piano:** choose a slot, draw a note with dragged duration; drag an existing
-  note to resize, right-click anywhere on its duration to delete. One octave visible;
-  wheel scrolls octaves. Note relocation, multiselection, velocity editing and MIDI
+  note to resize, right-click anywhere on its duration to delete. One octave visible by default (6–48 keys with vertical zoom);
+  wheel scrolls octaves; a pitch scrollbar reaches the full MIDI range. Horizontal
+  scroll/zoom handles and a vertical key-height grip keep editing coordinates
+  aligned while zoomed. Note relocation, multiselection, velocity editing and MIDI
   file import/export are not implemented. Duration gestures commit once on release.
-- **Mixer:** adjacent inactive Master and consistently sized channel strips with name,
+- **Mixer:** adjacent inactive Master and full-height track-coloured channel strips (no isolated colour stripe) with name,
   selection, M/S, bipolar pan knob, physical fader cap, dB scale/readout and inactive
   meter well. Lane mute/solo, -60 to +6 dB level and -1 to +1 pan are reversible
   **editing state**, not audio gain/routing. Double-click level/pan resets -6 dB/centre.
@@ -58,11 +61,22 @@ These are deliberate core FL-style mappings, not exhaustive FL Studio parity.
 | P / B / E / D / T / C / Z | Playlist draw / paint / select / delete / mute / slice / zoom |
 | Ctrl B / Ctrl D / Delete | Duplicate selected placement / deselect / delete selected placement |
 | Shift drag / Alt drag | Linked copy / bypass movement snap |
+| Horizontal handle edges / centre | Zoom time / scroll time (playlist and piano) |
+| Vertical grip | Drag up/down to change lane/key height; double-click resets |
+| Ctrl wheel / Alt wheel | Horizontal pointer-anchored zoom / vertical height zoom |
+| Middle drag | Two-axis view pan, without editing clips/notes |
+| Page Up / Page Down | Horizontal zoom in / out in the focused view |
+| Shift 1 / 2 / 3 / 4 | 2× / 4× / 8× time zoom / fit full workspace or source |
+| Double-click time scrollbar | Fit full workspace/source horizontally |
 | Enter | Maximize / restore playlist |
 | S with mixer focus | Solo selected lane (not playlist slip mode) |
 | Ctrl Z / Ctrl Y | Sequential undo / redo (explicit project choice) |
 | ? / F1 / Escape | Help / help / close help |
 | Ctrl S / Ctrl N | Explain unavailable save/version; **never save or reset project** |
+
+Time zoom is bounded to 1–32×; playlist lane heights to 60–180 px, piano to 6–48
+visible keys. View navigation adds no undo entries. Selection-region zoom and
+FL-specific per-lane height overrides are not implemented.
 
 Native text editing owns its input; piano/mixer focus does not select playlist
 tools or duplicate/delete playlist clips. Unsupported commands, including plugin

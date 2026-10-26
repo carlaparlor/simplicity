@@ -18,6 +18,12 @@ public:
     Workspace& model;
     std::function<void()> changed, edit, zoomRequested;
     double beatWidth{12};
+    int laneHeight{72};
+    bool panning{};
+    std::function<void(double,double)> zoomAt;
+    std::function<void(double)> heightZoom;
+    std::function<void()> panStart;
+    std::function<void(int,int)> panBy;
     Tool tool{Tool::draw};
     int dragged{}, dragRow{-1}, targetRow{-1};
     double dragStart{}, preview{}, previewLength{};
@@ -27,27 +33,21 @@ public:
     juce::Rectangle<float> clipBounds(const SketchClip& c,int row) const {
         const bool active=dragged==c.id;
         const double at=active?preview:c.beat;
-        return {static_cast<float>(at*beatWidth+1),static_cast<float>((active?targetRow:row)*rowHeight+5),static_cast<float>((active?previewLength:c.length)*beatWidth-2),static_cast<float>(rowHeight-10)};
+        return {static_cast<float>(at*beatWidth+1),static_cast<float>((active?targetRow:row)*laneHeight+5),static_cast<float>((active?previewLength:c.length)*beatWidth-2),static_cast<float>(laneHeight-10)};
     }
     void paint(juce::Graphics& g) override {
         g.fillAll(bg);
         for(int bar=0;bar<16;++bar){const int x=static_cast<int>(bar*4*beatWidth);if((bar/4)%2==0){g.setColour(juce::Colour(0xff181818));g.fillRect(x,0,static_cast<int>(4*beatWidth),getHeight());}g.setColour(line);g.drawVerticalLine(x,0,static_cast<float>(getHeight()));for(int b=1;b<4;++b){g.setColour(line.withAlpha(0.35F));g.drawVerticalLine(x+static_cast<int>(b*beatWidth),0,static_cast<float>(getHeight()));}}
-        for(std::size_t row=0;row<model.tracks().size();++row){const auto& track=model.tracks()[row];g.setColour(line);g.drawHorizontalLine(static_cast<int>(row+1)*rowHeight-1,0,static_cast<float>(getWidth()));
-            for(const auto& c:track.clips){const auto r=clipBounds(c,static_cast<int>(row));if(!g.getClipBounds().intersects(r.toNearestInt()))continue;const auto* p=model.pattern(c.pattern);if(!p)continue;const auto colour=trackColours[p->colour%4];const bool quiet=track.muted||c.muted;
-                g.setColour(juce::Colours::black.withAlpha(0.5F));g.fillRoundedRectangle(r.translated(1,2),2);
-                g.setColour(colour.interpolatedWith(bg,quiet?0.93F:0.78F));g.fillRoundedRectangle(r,2);
-                g.setGradientFill(juce::ColourGradient(colour.withAlpha(quiet?0.12F:0.5F),r.getX(),r.getY(),colour.withAlpha(quiet?0.08F:0.28F),r.getX(),r.getY()+18,false));g.fillRect(r.withHeight(18));
-                ui::label(g,juce::String(p->name),r.toNearestInt().reduced(5,0).withHeight(18),12,quiet?muted:ink);
-                drawPatternNotes(g,*p,r.reduced(3,3).withTrimmedTop(18),c.offset,dragged==c.id?previewLength:c.length,colour.withAlpha(quiet?0.25F:0.95F));
-                g.setColour(model.selectedClip()==c.id?ink:colour.withAlpha(0.3F));g.drawRoundedRectangle(r,2,1);
+        for(std::size_t row=0;row<model.tracks().size();++row){const auto& track=model.tracks()[row];g.setColour(line);g.drawHorizontalLine(static_cast<int>(row+1)*laneHeight-1,0,static_cast<float>(getWidth()));
+            for(const auto& c:track.clips){const auto r=clipBounds(c,static_cast<int>(row));if(!g.getClipBounds().intersects(r.toNearestInt()))continue;const auto* p=model.pattern(c.pattern);if(!p)continue;drawPatternClip(g,*p,r,c.offset,dragged==c.id?previewLength:c.length,model.selectedClip()==c.id,track.muted||c.muted);
             }
         }
-        if(painting){g.setColour(ink.withAlpha(0.22F));const auto* p=model.pattern(model.activePattern());if(p)for(auto at:stroke)g.fillRect(static_cast<float>(at*beatWidth),static_cast<float>(dragRow*rowHeight+5),static_cast<float>(p->length)/96*static_cast<float>(beatWidth),static_cast<float>(rowHeight-10));}
+        if(painting){g.setColour(ink.withAlpha(0.22F));const auto* p=model.pattern(model.activePattern());if(p)for(auto at:stroke)g.fillRect(static_cast<float>(at*beatWidth),static_cast<float>(dragRow*laneHeight+5),static_cast<float>(p->length)/96*static_cast<float>(beatWidth),static_cast<float>(laneHeight-10));}
         g.setColour(ink);g.fillRect(static_cast<float>(model.position()*beatWidth),0.0F,1.0F,static_cast<float>(getHeight()));
     }
     const SketchClip* hit(juce::Point<float> at) const {for(std::size_t row=0;row<model.tracks().size();++row)for(const auto& c:model.tracks()[row].clips)if(clipBounds(c,static_cast<int>(row)).contains(at))return &c;return nullptr;}
     void mouseDown(const juce::MouseEvent& e) override {
-        grabKeyboardFocus();dragged=0;painting=false;stroke.clear();dragRow=targetRow=e.y/rowHeight;freeSnap=e.mods.isAltDown();const double at=e.position.x/beatWidth;
+        grabKeyboardFocus();panning=e.mods.isMiddleButtonDown();if(panning){dragged=0;painting=false;if(panStart)panStart();return;}dragged=0;painting=false;stroke.clear();dragRow=targetRow=e.y/laneHeight;freeSnap=e.mods.isAltDown();const double at=e.position.x/beatWidth;
         if(tool==Tool::zoom){if(zoomRequested)zoomRequested();return;}
         if(const auto* found=hit(e.position)){const auto c=*found;model.selectClip(c.id);model.selectPattern(c.pattern);
             if(e.mods.isRightButtonDown() || tool==Tool::erase){model.removeClip();changed();return;}
@@ -63,15 +63,23 @@ public:
         changed();
     }
     void mouseDrag(const juce::MouseEvent& e) override {
+        if(panning){if(panBy)panBy(e.getDistanceFromDragStartX(),e.getDistanceFromDragStartY());return;}
         if(painting){const auto* p=model.pattern(model.activePattern());if(!p)return;const double length=static_cast<double>(p->length)/96;const double end=e.position.x/beatWidth;const double start=stroke.front();stroke.resize(1);for(double at=start+length;at<=end && at<=Workspace::duration-length;at+=length)stroke.push_back(at);repaint();return;}
-        if(const auto* c=model.clip(dragged)){const double delta=e.getDistanceFromDragStartX()/beatWidth;const auto value=freeSnap?dragStart+delta:Workspace::snapped(dragStart+delta,model.grid);if(trimming)previewLength=std::clamp(freeSnap?c->length+delta:Workspace::snapped(c->length+delta,model.grid),0.25,Workspace::duration-c->beat);else{preview=std::clamp(value,0.0,Workspace::duration-c->length);targetRow=std::clamp(e.y/rowHeight,0,static_cast<int>(model.tracks().size())-1);}repaint();}
+        if(const auto* c=model.clip(dragged)){const double delta=e.getDistanceFromDragStartX()/beatWidth;const auto value=freeSnap?dragStart+delta:Workspace::snapped(dragStart+delta,model.grid);if(trimming)previewLength=std::clamp(freeSnap?c->length+delta:Workspace::snapped(c->length+delta,model.grid),0.25,Workspace::duration-c->beat);else{preview=std::clamp(value,0.0,Workspace::duration-c->length);targetRow=std::clamp(e.y/laneHeight,0,static_cast<int>(model.tracks().size())-1);}repaint();}
     }
     void mouseUp(const juce::MouseEvent&) override {
+        if(panning){panning=false;return;}
         if(painting){painting=false;model.paintPattern(dragRow,stroke);stroke.clear();changed();}
         if(dragged!=0){const int id=dragged;dragged=0;if(trimming)model.resizeClip(id,previewLength);else if(cloning)model.clonePlacement(id,targetRow,preview);else model.moveClipTo(id,targetRow,preview,!freeSnap);changed();}
     }
+    void mouseWheelMove(const juce::MouseEvent& e,const juce::MouseWheelDetails& wheel) override {
+        if(wheel.deltaY==0)return;
+        if(e.mods.isCtrlDown()){if(zoomAt)zoomAt(wheel.deltaY>0?1.25:0.8,e.position.x/(Workspace::duration*beatWidth));}
+        else if(e.mods.isAltDown()){if(heightZoom)heightZoom(wheel.deltaY>0?1.1:1/1.1);}
+        else juce::Component::mouseWheelMove(e,wheel);
+    }
     bool isInterestedInDragSource(const SourceDetails& details) override {const auto text=details.description.toString();return text.startsWith("pattern:") && model.pattern(text.fromFirstOccurrenceOf(":",false,false).getIntValue())!=nullptr;}
-    void itemDropped(const SourceDetails& details) override {if(!isInterestedInDragSource(details))return;model.selectPattern(details.description.toString().fromFirstOccurrenceOf(":",false,false).getIntValue());model.placePattern(details.localPosition.y/rowHeight,details.localPosition.x/beatWidth);changed();}
+    void itemDropped(const SourceDetails& details) override {if(!isInterestedInDragSource(details))return;model.selectPattern(details.description.toString().fromFirstOccurrenceOf(":",false,false).getIntValue());model.placePattern(details.localPosition.y/laneHeight,details.localPosition.x/beatWidth);changed();}
     void mouseDoubleClick(const juce::MouseEvent& e) override {if(const auto* c=hit(e.position)){model.selectPattern(c->pattern);if(edit)edit();}}
 };
 class ResizeGrip final : public juce::Component {
@@ -98,7 +106,7 @@ public:
 };
 class TrackHeaders final : public juce::Component {
 public:
-    Workspace& model; std::function<void()> changed; int scroll{};
+    Workspace& model; std::function<void()> changed; int scroll{}, laneHeight{72};
     juce::OwnedArray<TrackName> names;
     juce::OwnedArray<juce::TextButton> mute, solo;
     explicit TrackHeaders(Workspace& m) : model(m) {}
@@ -124,14 +132,14 @@ public:
         }
         resized(); repaint();
     }
-    void resized() override { for (int i = 0; i < names.size(); ++i) { const int y = i*rowHeight-scroll; names[i]->setBounds(30,y+10,getWidth()-42,27); mute[i]->setBounds(30,y+37,24,20); solo[i]->setBounds(60,y+37,24,20); } }
+    void resized() override {for(int i=0;i<names.size();++i){const int y=i*laneHeight-scroll;const int height=std::min(24,laneHeight/3);names[i]->setBounds(30,y+6,getWidth()-42,height);mute[i]->setBounds(30,y+height+14,24,20);solo[i]->setBounds(60,y+height+14,24,20);}}
     void paint(juce::Graphics& g) override {
         g.fillAll(panel);
         for (int i = 0; i < names.size(); ++i) {
-            const int y = i*rowHeight-scroll; const auto colour = trackColours[model.tracks()[static_cast<std::size_t>(i)].colour % 4];
+            const int y = i*laneHeight-scroll; const auto colour = trackColours[model.tracks()[static_cast<std::size_t>(i)].colour % 4];
             ui::glyph(g, ui::Glyph::wave, {8, static_cast<float>(y+15), 16, 16}, colour);
             ui::label(g, number(i+1), {8,y+37,20,20},14, muted);
-            g.setColour(line.withAlpha(0.5F)); g.drawHorizontalLine(y+rowHeight-1, 0, static_cast<float>(getWidth()));
+            g.setColour(line.withAlpha(0.5F)); g.drawHorizontalLine(y+laneHeight-1, 0, static_cast<float>(getWidth()));
         }
     }
 };
@@ -155,11 +163,11 @@ public:
     void refresh() { const auto& t = model.tracks()[static_cast<std::size_t>(index)]; select.setButtonText(t.name); select.setToggleState(model.selectedTrack()==index,juce::dontSendNotification); mute.setToggleState(t.muted,juce::dontSendNotification); solo.setToggleState(t.solo,juce::dontSendNotification); if (!level.isMouseButtonDown()) level.setValue(t.level,juce::dontSendNotification); if(!pan.isMouseButtonDown())pan.setValue(t.pan,juce::dontSendNotification);repaint(); }
     void resized() override { select.setBounds(4,7,getWidth()-8,27); mute.setBounds(8,43,26,22); solo.setBounds(42,43,26,22); pan.setBounds(23,68,32,32);level.setBounds(3,106,64,getHeight()-111); }
     void paint(juce::Graphics& g) override {
-        g.setGradientFill(juce::ColourGradient(juce::Colour(0xff292929),0,0,panel,static_cast<float>(getWidth()),0,false));g.fillAll();
+        const auto tint=patternColour(model.tracks()[static_cast<std::size_t>(index)].colour);
+        g.setGradientFill(juce::ColourGradient(tint.interpolatedWith(panel,0.64F),0,0,tint.interpolatedWith(bg,0.78F),static_cast<float>(getWidth()),0,false));g.fillAll();
         g.setColour(line);g.drawVerticalLine(getWidth()-1,0,static_cast<float>(getHeight()));
         for(int tick=0;tick<6;++tick){const int y=112+tick*std::max(1,getHeight()-150)/5;g.setColour(ui::secondary.withAlpha(0.4F));g.drawHorizontalLine(y,6,15);}
 
-        g.setColour(trackColours[model.tracks()[static_cast<std::size_t>(index)].colour % 4]); g.fillRoundedRectangle(9,0,static_cast<float>(getWidth()-18),2,1);
         g.setColour(bg); g.fillRoundedRectangle(static_cast<float>(getWidth()-9),109,4,static_cast<float>(std::max(1,getHeight()-149)),2);
     }
 };
@@ -196,6 +204,8 @@ public:
     juce::ComboBox tool;
     int dock{}, browserWidth{280}, patternWidth{228}, dockHeight{290}; bool showPatterns{true}, playlistMax{};
     ResizeGrip browserGrip, patternGrip, dockGrip{true};
+    TimelineZoomBar timeZoom;VerticalZoomGrip verticalZoom;
+    bool layingOut{};juce::Point<int> panOrigin;
     Canvas canvas{model}; ScrollingView lanes; TrackHeaders headers{model};
     juce::Component mixerContent; juce::Viewport mixerView;
     juce::OwnedArray<Channel> channels;
@@ -205,7 +215,7 @@ public:
     juce::Rectangle<int> toolbarArea, browserArea, arrangementArea, rulerArea, mixerArea, statusArea;
     explicit Impl(WorkspaceView& o) : owner(o) {
         owner.setLookAndFeel(&look); owner.setWantsKeyboardFocus(true); owner.setFocusContainerType(juce::Component::FocusContainerType::keyboardFocusContainer); owner.setName("Simplicity workspace");
-        for (auto* c : std::initializer_list<juce::Component*>{&title,&position,&tempo,&file,&play,&stop,&record,&undo,&redo,&browserToggle,&mixerToggle,&loop,&help,&addTrack,&addClip,&duplicate,&remove,&zoomOut,&zoomIn,&preview,&snap,&browser,&patterns,&editor,&browserGrip,&patternGrip,&dockGrip,&mode,&rack,&piano,&picker,&tool,&lanes,&headers,&mixerView}) owner.addAndMakeVisible(c);
+        for (auto* c : std::initializer_list<juce::Component*>{&title,&position,&tempo,&file,&play,&stop,&record,&undo,&redo,&browserToggle,&mixerToggle,&loop,&help,&addTrack,&addClip,&duplicate,&remove,&zoomOut,&zoomIn,&preview,&snap,&browser,&patterns,&editor,&browserGrip,&patternGrip,&dockGrip,&mode,&rack,&piano,&picker,&tool,&lanes,&headers,&mixerView,&timeZoom,&verticalZoom}) owner.addAndMakeVisible(c);
         owner.addChildComponent(helpPanel);
         title.setFont(ui::font(14,true)); title.setEditable(false,true); title.setTooltip("Double-click to rename project"); title.onTextChange = [this] { model.setTitle(title.getText().toStdString()); refresh(); };
         position.setFont(ui::font(28)); position.setBorderSize({0,0,0,0}); position.setTooltip("Visual position: bar, beat, fraction");
@@ -228,10 +238,12 @@ public:
         };
         snap.addItem("Bar",1); snap.addItem("1/2 beat",2); snap.addItem("1/4 beat",3); snap.addItem("Off",4); snap.setSelectedId(3,juce::dontSendNotification); model.grid = 0.25;
         snap.setName("Clip snap grid"); snap.setTooltip("Clip movement snap grid"); snap.onChange = [this] { const double values[]{4,0.5,0.25,0}; model.grid = values[std::clamp(snap.getSelectedId()-1,0,3)]; };
-        zoomOut.onClick = [this] { zoom = std::max(0.75,zoom-0.25); owner.resized(); };
-        zoomIn.onClick = [this] { zoom = std::min(3.0,zoom+0.25); owner.resized(); };
-        lanes.setViewedComponent(&canvas,false); lanes.setScrollBarsShown(true,true); lanes.setScrollBarThickness(7);
-        lanes.scrolled = [this] { headers.scroll=lanes.getViewPositionY(); headers.resized(); headers.repaint(); owner.repaint(rulerArea); };
+        zoomOut.onClick = [this] { zoomAt(0.8,timeZoom.start()+timeZoom.span()/2); };
+        zoomIn.onClick = [this] { zoomAt(1.25,timeZoom.start()+timeZoom.span()/2); };
+        lanes.setViewedComponent(&canvas,false); lanes.setScrollBarsShown(true,false); lanes.setScrollBarThickness(7);
+        timeZoom.changed=[this]{zoom=1/timeZoom.span();owner.resized();};verticalZoom.scale=[this](double factor){zoomHeight(factor);};verticalZoom.reset=[this]{zoomHeight(72.0/canvas.laneHeight);};
+        canvas.zoomAt=[this](double factor,double anchor){zoomAt(factor,anchor);};canvas.heightZoom=[this](double factor){zoomHeight(factor);};canvas.panStart=[this]{panOrigin=lanes.getViewPosition();};canvas.panBy=[this](int x,int y){lanes.setViewPosition(panOrigin.x-x,panOrigin.y-y);};
+        lanes.scrolled = [this] { if(!layingOut)timeZoom.setRange(lanes.getViewPositionX()/(Workspace::duration*canvas.beatWidth),1/zoom);headers.scroll=lanes.getViewPositionY(); headers.resized(); headers.repaint(); owner.repaint(rulerArea); };
         canvas.zoomRequested=[this]{zoomIn.onClick();};canvas.changed = [this] { refresh(); }; headers.changed = [this] { refresh(); };
         patterns.changed=[this]{refresh();}; editor.changed=[this]{refresh();};
         patterns.edit=[this]{dock=2;showMixer=true;refresh();editor.grabKeyboardFocus();};canvas.edit=patterns.edit;
@@ -267,7 +279,10 @@ public:
     }
     void updatePosition() { const double p=model.position(); position.setText(number(static_cast<int>(p)/4+1)+" : "+number(static_cast<int>(p)%4+1)+" : "+number(static_cast<int>((p-std::floor(p))*100)),juce::dontSendNotification); }
     void timerCallback() override { const auto now=juce::Time::getMillisecondCounterHiRes(); const bool wasPlaying=model.playing(); model.advance((now-previousTime)/1000.0); previousTime=now; if (wasPlaying) { updatePosition(); canvas.repaint(); owner.repaint(rulerArea); if (!model.playing()) refresh(); } }
+    void zoomAt(double factor,double anchor){timeZoom.zoom(factor,anchor);}
+    void zoomHeight(double factor){if(!std::isfinite(factor)||factor<=0)return;const double top=static_cast<double>(lanes.getViewPositionY())/canvas.laneHeight;canvas.laneHeight=std::clamp(static_cast<int>(std::round(canvas.laneHeight*factor)),60,180);headers.laneHeight=canvas.laneHeight;owner.resized();lanes.setViewPosition(lanes.getViewPositionX(),static_cast<int>(top*canvas.laneHeight));}
     void layout() {
+        const juce::ScopedValueSetter<bool> guard(layingOut,true);timeZoom.setRange(timeZoom.start(),1/zoom);const auto horizontalStart=timeZoom.start();
         auto area=owner.getLocalBounds(); toolbarArea=area.removeFromTop(62); statusArea=area.removeFromBottom(24);
         file.setBounds(12,15,32,32); title.setBounds(52,15,139,32); undo.setBounds(201,15,30,32); redo.setBounds(237,15,30,32);
         stop.setBounds(291,15,32,32); play.setBounds(329,15,36,32); record.setBounds(371,15,32,32); loop.setBounds(415,15,32,32);
@@ -284,9 +299,12 @@ public:
         duplicate.setBounds(top.getX()+212,top.getY()+8,30,29); remove.setBounds(top.getX()+248,top.getY()+8,30,29);
         zoomOut.setBounds(top.getRight()-75,top.getY()+8,27,29); zoomIn.setBounds(top.getRight()-42,top.getY()+8,27,29);
         tool.setBounds(top.getX()+286,top.getY()+8,114,29);
+        const auto navigation=area.removeFromTop(18);timeZoom.setBounds(navigation.withTrimmedLeft(144).withTrimmedRight(18));verticalZoom.setBounds(navigation.getRight()-17,navigation.getY(),16,16);
+        timeZoom.setVisible(true);verticalZoom.setVisible(true);
         rulerArea=area.removeFromTop(30); headers.setBounds(area.removeFromLeft(144)); lanes.setBounds(area);
-        canvas.beatWidth=std::max(8.0,(lanes.getWidth()-10)/Workspace::duration)*zoom;
-        canvas.setSize(static_cast<int>(std::ceil(Workspace::duration*canvas.beatWidth))+4,std::max(lanes.getHeight()-10,static_cast<int>(model.tracks().size())*rowHeight));
+        canvas.beatWidth=std::max(1.0,(lanes.getWidth()-10)/Workspace::duration)*zoom;
+        canvas.setSize(static_cast<int>(std::ceil(Workspace::duration*canvas.beatWidth))+4,std::max(lanes.getHeight()-10,static_cast<int>(model.tracks().size())*canvas.laneHeight));
+        lanes.setViewPosition(static_cast<int>(horizontalStart*Workspace::duration*canvas.beatWidth),lanes.getViewPositionY());timeZoom.setRange(lanes.getViewPositionX()/(Workspace::duration*canvas.beatWidth),1/zoom);
         headers.scroll=lanes.getViewPositionY(); headers.resized();
         mixerView.setVisible(!mixerArea.isEmpty() && dock==0);editor.setVisible(!mixerArea.isEmpty() && dock!=0);if(editor.isVisible())editor.setBounds(mixerArea);
         if(!mixerArea.isEmpty() && dock==0) { mixerView.setBounds(mixerArea.withTrimmedTop(32).withTrimmedLeft(84)); mixerContent.setSize(std::max(mixerView.getWidth(),channels.size()*80),mixerView.getHeight()-7); for(int n=0;n<channels.size();++n) channels[n]->setBounds(n*80,0,80,mixerContent.getHeight()); }
@@ -343,6 +361,7 @@ bool WorkspaceView::keyPressed(const juce::KeyPress& key) {
     auto& i=*impl_;const int c=key.getKeyCode();const auto mods=key.getModifiers();
     if(dynamic_cast<juce::TextEditor*>(juce::Component::getCurrentlyFocusedComponent())!=nullptr)return false;
     if(i.helpOpen){if(c==juce::KeyPress::escapeKey)perform(ShellAction::help);return true;}
+    if(i.editor.hasKeyboardFocus(true) && i.editor.keyPressed(key))return true;
     const bool playlistContext=!(i.editor.hasKeyboardFocus(true)||i.mixerView.hasKeyboardFocus(true)||i.browser.hasKeyboardFocus(true)||i.patterns.hasKeyboardFocus(true));
     if(mods.isAltDown()){
         if(c==juce::KeyPress::F8Key){perform(ShellAction::browser);return true;}
@@ -368,6 +387,8 @@ bool WorkspaceView::keyPressed(const juce::KeyPress& key) {
     if(c==juce::KeyPress::returnKey){i.playlistMax=!i.playlistMax;i.refresh();return true;}
     if(c==juce::KeyPress::homeKey){i.model.stop();i.refresh();return true;}
     if(c==juce::KeyPress::deleteKey && i.model.selectedClip()!=0 && playlistContext){i.model.removeClip();i.refresh();return true;}
+    if(playlistContext && (c==juce::KeyPress::pageUpKey||c==juce::KeyPress::pageDownKey)){i.zoomAt(c==juce::KeyPress::pageUpKey?1.25:0.8,i.timeZoom.start()+i.timeZoom.span()/2);return true;}
+    if(playlistContext && mods.isShiftDown() && c>='1' && c<='4'){i.timeZoom.setRange(0,c=='4'?1:1.0/(1<<(c-'1'+1)));i.zoom=1/i.timeZoom.span();resized();return true;}
     if(c=='L'){i.mode.onClick();return true;}
     if(c=='?' || c==juce::KeyPress::F1Key){perform(ShellAction::help);return true;}
     if(c=='S' && i.mixerView.hasKeyboardFocus(true)){i.model.toggleSolo();i.refresh();return true;}
@@ -394,6 +415,23 @@ juce::String WorkspaceView::runSmokeTest() {
     };
     const auto click=[&](const char* id){return clickIn(*this,id);};
     if(i.model.tracks().size()!=4)return "Initial demo missing";
+    const auto left=i.patterns.cardBounds(0),right=i.patterns.cardBounds(1),next=i.patterns.cardBounds(2);
+    if(left.isEmpty() || left.getY()!=right.getY() || left.intersects(right) || next.getX()!=left.getX() || next.getY()<=left.getBottom())return "Two-column pattern grid regression";
+    const auto strip=i.channels[0]->createComponentSnapshot(i.channels[0]->getLocalBounds());
+    for(int y:{20,strip.getHeight()-10})if(strip.getPixelAt(77,y).getRed()==strip.getPixelAt(77,y).getBlue())return "Full-height mixer tint regression";
+    const auto initialWidth=i.canvas.clipBounds(i.model.tracks()[0].clips[0],0).getWidth();
+    i.timeZoom.zoom(2,0.5);
+    if(i.zoom!=2 || i.canvas.clipBounds(i.model.tracks()[0].clips[0],0).getWidth()<=initialWidth || i.lanes.getViewPositionX()==0)return "Playlist scrollbar zoom binding failed";
+    i.canvas.panStart();const int oldPan=i.lanes.getViewPositionX();i.canvas.panBy(-20,0);if(i.lanes.getViewPositionX()<=oldPan)return "Playlist pan binding failed";
+    for(double factor:{100.0,0.001,1.2}){
+        i.verticalZoom.scale(factor);
+        for(int n=0;n<i.headers.names.size();++n)if(i.headers.names[n]->getBottom()+8>i.headers.mute[n]->getY() || i.headers.names[n]->getBounds().intersects(i.headers.solo[n]->getBounds()) || i.headers.mute[n]->getBottom()>(n+1)*i.canvas.laneHeight-i.headers.scroll)return "Track-name / M-S spacing regression";
+    }
+    i.verticalZoom.reset();if(i.canvas.laneHeight!=72)return "Playlist vertical zoom reset failed";
+    grabKeyboardFocus();if(!keyPressed(juce::KeyPress(juce::KeyPress::pageUpKey)) || i.zoom<=2)return "Playlist Page Up zoom failed";
+    keyPressed(juce::KeyPress('4',juce::ModifierKeys::shiftModifier,0));
+    if(i.zoom!=1 || i.model.canUndo() || i.model.selectedClip()!=0)return "View navigation mutated music/history";
+
     perform(ShellAction::newSession);
     if(!i.model.tracks().empty() || i.addClip.isEnabled() || i.remove.isEnabled())return "Empty session controls failed";
     if(!click("add-track") || !click("add-clip") || i.model.tracks().size()!=1 || i.model.selectedClip()==0)return "Native add controls failed";
@@ -480,7 +518,7 @@ juce::String WorkspaceView::runSmokeTest() {
     if(!click("clone-pattern") || !click("delete-pattern") || i.model.patterns().size()!=2)return "Unused source clone/delete failed";
     i.model.selectPattern(isolated);i.refresh();
     grabKeyboardFocus();if(!keyPressed(juce::KeyPress(juce::KeyPress::F7Key)) || !i.editor.piano || i.dock!=2)return "Piano shortcut failed";
-    i.editor.basePitch=48;const auto r=i.editor.getLocalBounds().withTrimmedTop(43).withTrimmedLeft(86).reduced(0,8).withTrimmedRight(14);const float cell=static_cast<float>(r.getWidth())/16;
+    i.editor.basePitch=48;const auto r=i.editor.gridBounds();const float cell=static_cast<float>(r.getWidth())/16;
     const juce::Point<float> noteStart{static_cast<float>(r.getX())+cell*0.5F,static_cast<float>(r.getY()+r.getHeight()/24)};
     const auto editorEvent=[&](juce::Point<float> point,int mods){return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),point,juce::ModifierKeys(mods),1.0F,0,0,0,0,&i.editor,&i.editor,juce::Time::getCurrentTime(),noteStart,juce::Time::getCurrentTime(),1,true);};
     i.editor.mouseDown(editorEvent(noteStart,juce::ModifierKeys::leftButtonModifier));i.editor.mouseUp(editorEvent(noteStart.translated(2*cell,0),juce::ModifierKeys::leftButtonModifier));
@@ -489,6 +527,17 @@ juce::String WorkspaceView::runSmokeTest() {
     if(i.model.pattern(i.model.activePattern())->notes[0].length!=96)return "Piano note resize failed";
     i.editor.mouseDown(editorEvent(noteStart.translated(cell,0),juce::ModifierKeys::rightButtonModifier));i.editor.mouseUp(editorEvent(noteStart,juce::ModifierKeys::rightButtonModifier));
     if(!i.model.pattern(i.model.activePattern())->notes.empty())return "Piano sustained-note erasure failed";
+    i.editor.zoomHorizontal(2);i.editor.zoomVertical(2);
+    if(i.editor.horizontalSpan()!=0.5 || i.editor.visibleRows()!=6)return "Piano two-axis zoom failed";
+    const auto zoomGrid=i.editor.gridBounds();const float zoomCell=static_cast<float>(zoomGrid.getWidth())/8;
+    const juce::Point<float> zoomStart{static_cast<float>(zoomGrid.getX())+zoomCell*0.5F,static_cast<float>(zoomGrid.getY()+zoomGrid.getHeight()/12)};
+    i.editor.mouseDown(editorEvent(zoomStart,juce::ModifierKeys::leftButtonModifier));i.editor.mouseUp(editorEvent(zoomStart.translated(zoomCell,0),juce::ModifierKeys::leftButtonModifier));
+    const auto& zoomNotes=i.model.pattern(i.model.activePattern())->notes;
+    if(zoomNotes.size()!=1 || zoomNotes[0].tick!=96 || zoomNotes[0].length!=48)return "Zoomed piano coordinate transform failed";
+    i.editor.mouseDown(editorEvent(zoomStart,juce::ModifierKeys::rightButtonModifier));i.editor.mouseUp(editorEvent(zoomStart,juce::ModifierKeys::rightButtonModifier));
+    i.editor.zoomHorizontal(0.001);i.editor.zoomVertical(0.5);
+    if(i.editor.horizontalSpan()!=1 || i.editor.visibleRows()!=12 || !i.model.undo() || i.model.pattern(i.model.activePattern())->notes.size()!=1)return "Piano zoom consumed an undo step";
+    i.model.redo();
     if(keyPressed(juce::KeyPress('B')))return "Piano must not change playlist tools";
     grabKeyboardFocus();if(!keyPressed(juce::KeyPress(juce::KeyPress::F6Key)) || i.editor.piano)return "Rack shortcut failed";
     grabKeyboardFocus();keyPressed(juce::KeyPress(juce::KeyPress::F4Key));

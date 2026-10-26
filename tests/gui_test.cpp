@@ -3,6 +3,8 @@
 #include <simplicity/browser_panel.h>
 #include <simplicity/pattern_panel.h>
 #include <simplicity/application_icon.h>
+#include <simplicity/zoom_controls.h>
+#include <limits>
 #include "test_support.h"
 
 int main(int argc, char** argv) {
@@ -99,6 +101,27 @@ int main(int argc, char** argv) {
     simplicity::WorkspaceView view;
     juce::DocumentWindow window("Simplicity GUI tests", juce::Colours::black, 0);
     window.setContentNonOwned(&view, false); window.centreWithSize(1440, 900); window.setVisible(true);
+    // Exercise real handle edges, pan, bounds, callbacks and keyboard navigation.
+    TimelineZoomBar bar;view.addAndMakeVisible(bar);bar.setBounds(0,0,400,18);int rangeChanges=0;bar.changed=[&]{++rangeChanges;};
+    const auto event=[](juce::Component& target,juce::Point<float> down,juce::Point<float> at,int mods=juce::ModifierKeys::leftButtonModifier){return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(),at,juce::ModifierKeys(mods),1.0F,0,0,0,0,&target,&target,juce::Time::getCurrentTime(),down,juce::Time::getCurrentTime(),1,true);};
+    bar.setRange(0.25,0.5);CHECK(rangeChanges==0);bar.mouseDown(event(bar,{299,8},{299,8}));bar.mouseDrag(event(bar,{299,8},{199,8}));CHECK(std::abs(bar.start()-0.25)<1e-6);CHECK(std::abs(bar.span()-0.25)<1e-6);
+    bar.setRange(0.25,0.5);bar.mouseDown(event(bar,{101,8},{101,8}));bar.mouseDrag(event(bar,{101,8},{201,8}));CHECK(std::abs(bar.start()-0.5)<1e-6);CHECK(std::abs(bar.span()-0.25)<1e-6);
+    bar.setRange(0.25,0.25);bar.mouseDown(event(bar,{150,8},{150,8}));bar.mouseDrag(event(bar,{150,8},{230,8}));CHECK(std::abs(bar.start()-0.45)<1e-6);CHECK(rangeChanges==3);
+    bar.setRange(-1,2);CHECK(bar.start()==0 && bar.span()==1);bar.setRange(1,0);CHECK(bar.start()==1-TimelineZoomBar::minimumSpan);CHECK(bar.span()==TimelineZoomBar::minimumSpan);
+    bar.setRange(std::numeric_limits<double>::quiet_NaN(),0.5);CHECK(bar.span()==TimelineZoomBar::minimumSpan);bar.zoom(0,0.5);bar.zoom(-1,0.5);bar.zoom(std::numeric_limits<double>::infinity(),0.5);CHECK(bar.span()==TimelineZoomBar::minimumSpan);
+    bar.mouseDoubleClick(event(bar,{0,0},{0,0}));CHECK(bar.start()==0 && bar.span()==1);CHECK(bar.keyPressed(juce::KeyPress(juce::KeyPress::pageUpKey)));CHECK(bar.span()<1);CHECK(!bar.keyPressed(juce::KeyPress('Q')));
+    const double before=bar.start();CHECK(bar.keyPressed(juce::KeyPress(juce::KeyPress::rightKey)));CHECK(bar.start()>before);CHECK(bar.keyPressed(juce::KeyPress(juce::KeyPress::leftKey)));
+    VerticalZoomGrip grip;view.addAndMakeVisible(grip);grip.setBounds(400,0,16,18);double factor=0;int resets=0;grip.scale=[&](double value){factor=value;};grip.reset=[&]{++resets;};grip.mouseDown(event(grip,{8,8},{8,8}));grip.mouseDrag(event(grip,{8,8},{8,-88}));CHECK(std::abs(factor-2)<1e-6);grip.mouseDoubleClick(event(grip,{8,8},{8,8}));CHECK(resets==1);CHECK(grip.keyPressed(juce::KeyPress(juce::KeyPress::downKey)));CHECK(factor<1);
+    view.removeChildComponent(&bar);view.removeChildComponent(&grip);view.grabKeyboardFocus();
+    // Two columns, an odd final row and the same actual clip raster as the playlist.
+    Workspace sources;PatternPanel picker(sources);picker.setLookAndFeel(&look);picker.setSize(228,400);picker.refresh();
+    const auto a=picker.cardBounds(0),b=picker.cardBounds(1),c=picker.cardBounds(2);CHECK(a.getY()==b.getY());CHECK(!a.intersects(b));CHECK(c.getX()==a.getX());CHECK(c.getY()>a.getBottom());CHECK(picker.cardBounds(-1).isEmpty());CHECK(picker.cardBounds(4).isEmpty());
+    std::function<juce::Component*(juce::Component&)> findCard=[&](juce::Component& component)->juce::Component*{if(component.getComponentID()=="pattern-card-1")return &component;for(int n=0;n<component.getNumChildComponents();++n)if(auto* found=findCard(*component.getChildComponent(n)))return found;return nullptr;};
+    auto* card=findCard(picker);CHECK(card!=nullptr);const auto cardImage=card->createComponentSnapshot(card->getLocalBounds());juce::Image expected(juce::Image::ARGB,a.getWidth(),a.getHeight(),true);{juce::Graphics g(expected);drawPatternClip(g,*sources.pattern(1),card->getLocalBounds().toFloat().reduced(3),0,4,true);}
+    for(int y=5;y<a.getHeight()-5;++y)for(int x=5;x<a.getWidth()-5;++x)CHECK(cardImage.getPixelAt(x,y)==expected.getPixelAt(x,y));
+    sources.newSession();picker.refresh();CHECK(picker.cardBounds(0).isEmpty());for(int n=0;n<3;++n)CHECK(sources.addPattern("Card"));picker.refresh();CHECK(!picker.cardBounds(2).isEmpty());CHECK(picker.cardBounds(3).isEmpty());
+    for(int width:{190,228,300}){picker.setSize(width,300);CHECK(!picker.cardBounds(0).intersects(picker.cardBounds(1)));CHECK(picker.cardBounds(1).getRight()<width);}
+    picker.setLookAndFeel(nullptr);
     const auto error = view.runSmokeTest();
     if (error.isNotEmpty()) { std::cerr << error << '\n'; return 1; }
     CHECK(view.workspace().tracks().size() == 4);
