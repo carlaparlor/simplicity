@@ -32,9 +32,33 @@ Architecture and bounded first-milestone scope: [ADR 0006](../adr/0006-pattern-w
   domain/adapter coverage metric and is checked by Windows native tests instead.
 
 ## Native CI / delivery
-Pending Windows Debug/Release rendering, sanitizer/coverage/policy gates and real
-per-user installer + portable lifecycle verification. Do not merge before all
-seven checks pass. Screenshot and exact CI evidence to be added after inspection.
+[Quality run 40397562514](https://github.com/carlaparlor/simplicity/actions/runs/40397562514),
+source commit `99b3aa372d42d98581ca35903feaff15d1777da3`: all seven checks **passed**:
+
+| Gate | Result |
+|---|---|
+| Architecture/workflow/Python policy | Pass |
+| Windows x64 Debug, including native GUI callbacks/render | Pass |
+| Windows x64 Release, including native GUI callbacks/render | Pass |
+| ASan + UBSan internal analysis | Pass |
+| 95% line / 90% branch coverage enforcement | Pass |
+| Real per-user installer and portable lifecycle | Pass |
+| Required gates aggregate | Pass |
+
+Local ASan/UBSan also passed all 8 analysis CTests with leak detection/halt-on-error.
+[PR #6](https://github.com/carlaparlor/simplicity/pull/6) contains this implementation;
+explicit merge is contingent on the current head retaining all seven green checks.
+The final follow-up changes only documentation; no production code after the
+validated source commit above.
+
+Native screenshots were generated and uploaded in `tests-windows-Debug` and
+`tests-windows-Release`; installer/ZIP/checksums are in
+`Simplicity-Windows-x64-development`. Sandbox outbound host restrictions block
+GitHub's artifact/log storage redirects. Download attempts failed with EOF; **no
+visual screenshot inspection is claimed**. The prior checked-in PNG is historical;
+README now links the current native artifact instead of showing the old browser as
+the new UI. Raster assertions and native test exits passed; visual taste/DPI/pointer
+acceptance remains with the user. Raw logs/archives must be downloaded on GitHub.
 
 ## Explicit limits / manual acceptance
 No audio output, audition/import, hosted instruments, routing, recording or saving.
