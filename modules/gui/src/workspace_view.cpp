@@ -187,13 +187,14 @@ public:
 };
 } // namespace
 
-class WorkspaceView::Impl final : private juce::Timer {
+class WorkspaceView::Impl final : private juce::Timer, private juce::MenuBarModel {
 public:
     WorkspaceView& owner; Workspace model; ui::Look look;
     juce::TooltipWindow tooltips{&owner,500};
+    juce::MenuBarComponent menuBar{this};
     juce::Label title, position;
     juce::TextEditor tempo;
-    ui::IconButton file{"Project menu",ui::Glyph::folder}, play{"Play",ui::Glyph::play}, stop{"Stop",ui::Glyph::stop}, record{"Record",ui::Glyph::record}, undo{"Undo",ui::Glyph::undo}, redo{"Redo",ui::Glyph::redo};
+    ui::IconButton play{"Play",ui::Glyph::play}, stop{"Stop",ui::Glyph::stop}, record{"Record",ui::Glyph::record}, undo{"Undo",ui::Glyph::undo}, redo{"Redo",ui::Glyph::redo};
     ui::IconButton browserToggle{"Browser",ui::Glyph::tracks}, mixerToggle{"Mixer",ui::Glyph::mixer}, loop{"Loop",ui::Glyph::loop}, help{"Help",ui::Glyph::help};
     ui::IconButton addTrack{"Track",ui::Glyph::plus,true}, addClip{"Pattern",ui::Glyph::pattern,true}, duplicate{"Duplicate clip",ui::Glyph::duplicate}, remove{"Delete selection",ui::Glyph::trash}, zoomOut{"Zoom out",ui::Glyph::minus}, zoomIn{"Zoom in",ui::Glyph::plus};
     ui::IconButton preview{"Preview",ui::Glyph::help,true};
@@ -215,10 +216,10 @@ public:
     juce::Rectangle<int> toolbarArea, browserArea, arrangementArea, rulerArea, mixerArea, statusArea;
     explicit Impl(WorkspaceView& o) : owner(o) {
         owner.setLookAndFeel(&look); owner.setWantsKeyboardFocus(true); owner.setFocusContainerType(juce::Component::FocusContainerType::keyboardFocusContainer); owner.setName("Simplicity workspace");
-        for (auto* c : std::initializer_list<juce::Component*>{&title,&position,&tempo,&file,&play,&stop,&record,&undo,&redo,&browserToggle,&mixerToggle,&loop,&help,&addTrack,&addClip,&duplicate,&remove,&zoomOut,&zoomIn,&preview,&snap,&browser,&patterns,&editor,&browserGrip,&patternGrip,&dockGrip,&mode,&rack,&piano,&picker,&tool,&lanes,&headers,&mixerView,&timeZoom,&verticalZoom}) owner.addAndMakeVisible(c);
+        for (auto* c : std::initializer_list<juce::Component*>{&title,&position,&tempo,&menuBar,&play,&stop,&record,&undo,&redo,&browserToggle,&mixerToggle,&loop,&help,&addTrack,&addClip,&duplicate,&remove,&zoomOut,&zoomIn,&preview,&snap,&browser,&patterns,&editor,&browserGrip,&patternGrip,&dockGrip,&mode,&rack,&piano,&picker,&tool,&lanes,&headers,&mixerView,&timeZoom,&verticalZoom}) owner.addAndMakeVisible(c);
         owner.addChildComponent(helpPanel);
         title.setFont(ui::font(14,true)); title.setEditable(false,true); title.setTooltip("Double-click to rename project"); title.onTextChange = [this] { model.setTitle(title.getText().toStdString()); refresh(); };
-        position.setFont(ui::font(28)); position.setBorderSize({0,0,0,0}); position.setTooltip("Visual position: bar, beat, fraction");
+        position.setFont(ui::font(18)); position.setBorderSize({0,0,0,0}); position.setTooltip("Visual position: bar, beat, fraction");
         tempo.setName("Tempo, 40 to 240 BPM"); tempo.setFont(ui::font(14)); tempo.setInputRestrictions(3,"0123456789"); tempo.setBorder({5,8,4,4});
         tempo.onReturnKey = [this] { model.setBpm(tempo.getText().getDoubleValue()); refresh(); owner.grabKeyboardFocus(); };
         tempo.onFocusLost = [this] { model.setBpm(tempo.getText().getDoubleValue()); refresh(); };
@@ -231,11 +232,7 @@ public:
         bind(help,ShellAction::help,"Help and shortcuts"); bind(preview,ShellAction::help,"Visual preview only: no audio, recording or saving. Open help for details.");
         preview.getProperties().set("flat",true);
         loop.onClick = [this] { model.loop = !model.loop; refresh(); }; loop.setTooltip("Loop the visual 16-bar sketch");
-        file.onClick = [this] {
-            juce::PopupMenu menu; menu.addItem(1,"New project",true); menu.addItem(2,"Demo project",true); menu.addSeparator(); menu.addItem(3,"Save (not available yet)",false);
-            auto safe = juce::Component::SafePointer<WorkspaceView>(&owner);
-            menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&file), [safe](int item) { if (safe != nullptr && item != 0) safe->perform(item==1 ? ShellAction::newSession : ShellAction::demo); });
-        };
+        menuBar.setComponentID("main-menu");menuBar.setName("Main menu: File, Edit, View, Help");menuBar.setWantsKeyboardFocus(true);
         snap.addItem("Bar",1); snap.addItem("1/2 beat",2); snap.addItem("1/4 beat",3); snap.addItem("Off",4); snap.setSelectedId(3,juce::dontSendNotification); model.grid = 0.25;
         snap.setName("Clip snap grid"); snap.setTooltip("Clip movement snap grid"); snap.onChange = [this] { const double values[]{4,0.5,0.25,0}; model.grid = values[std::clamp(snap.getSelectedId()-1,0,3)]; };
         zoomOut.onClick = [this] { zoomAt(0.8,timeZoom.start()+timeZoom.span()/2); };
@@ -258,10 +255,27 @@ public:
         helpPanel.close.onClick = [this] { owner.perform(ShellAction::help); };
         owner.sendLookAndFeelChange(); setIDs(); startTimerHz(30);
     }
-    ~Impl() override { stopTimer(); owner.setLookAndFeel(nullptr); }
+    ~Impl() override {menuBar.setModel(nullptr); stopTimer(); owner.setLookAndFeel(nullptr); }
     void setIDs() {
-        file.setComponentID("session-menu"); play.setComponentID("play"); stop.setComponentID("stop"); addTrack.setComponentID("add-track"); addClip.setComponentID("add-clip"); tempo.setComponentID("tempo"); snap.setComponentID("snap");
+        play.setComponentID("play"); stop.setComponentID("stop"); addTrack.setComponentID("add-track"); addClip.setComponentID("add-clip"); tempo.setComponentID("tempo"); snap.setComponentID("snap");
         duplicate.setComponentID("duplicate"); remove.setComponentID("remove"); browserToggle.setComponentID("browser"); mixerToggle.setComponentID("mixer");
+    }
+    enum MenuCommand {newProject=101,demoProject,saveProject,undoCommand=201,redoCommand,duplicateCommand,deleteCommand,
+                      browserCommand=301,mixerCommand,patternsCommand,rackCommand,pianoCommand,helpCommand=401};
+    juce::StringArray getMenuBarNames() override {return {"File","Edit","View","Help"};}
+    juce::PopupMenu getMenuForIndex(int index,const juce::String&) override {
+        juce::PopupMenu menu;
+        if(index==0){menu.addItem(newProject,"New project");menu.addItem(demoProject,"Demo project");menu.addSeparator();menu.addItem(saveProject,"Save (not available yet)",false);}
+        else if(index==1){menu.addItem(undoCommand,"Undo    Ctrl Z",model.canUndo());menu.addItem(redoCommand,"Redo    Ctrl Y",model.canRedo());menu.addSeparator();menu.addItem(duplicateCommand,"Duplicate placement    Ctrl B",model.selectedClip()!=0);menu.addItem(deleteCommand,"Delete placement    Delete",model.selectedClip()!=0);}
+        else if(index==2){menu.addItem(browserCommand,"Browser    Alt F8",true,showBrowser);menu.addItem(patternsCommand,"Patterns    Alt P",true,showPatterns);menu.addSeparator();menu.addItem(mixerCommand,"Mixer    F9",true,showMixer&&dock==0);menu.addItem(rackCommand,"Channel rack    F6",true,showMixer&&dock==1);menu.addItem(pianoCommand,"Piano roll    F7",true,showMixer&&dock==2);}
+        else if(index==3)menu.addItem(helpCommand,"Help and shortcuts    F1");
+        return menu;
+    }
+    void menuItemSelected(int command,int index) override {
+        if(index==0){if(command==newProject)owner.perform(ShellAction::newSession);else if(command==demoProject)owner.perform(ShellAction::demo);}
+        else if(index==1){if(command==undoCommand&&model.canUndo())owner.perform(ShellAction::undo);else if(command==redoCommand&&model.canRedo())owner.perform(ShellAction::redo);else if(command==duplicateCommand&&model.selectedClip()!=0)owner.perform(ShellAction::duplicate);else if(command==deleteCommand&&model.selectedClip()!=0){model.removeClip();refresh();}}
+        else if(index==2){if(command==browserCommand)owner.perform(ShellAction::browser);else if(command==mixerCommand)owner.perform(ShellAction::mixer);else if(command==patternsCommand){showPatterns=!showPatterns;refresh();}else if(command==rackCommand)rack.onClick();else if(command==pianoCommand)piano.onClick();}
+        else if(index==3&&command==helpCommand)owner.perform(ShellAction::help);
     }
     void bind(ui::IconButton& b, ShellAction action, const juce::String& tooltip) { b.setTooltip(tooltip); b.onClick = [this,action] { owner.perform(action); }; }
     void wireShortcuts(juce::Component& c) { c.addKeyListener(&owner); for (int n=0;n<c.getNumChildComponents();++n) wireShortcuts(*c.getChildComponent(n)); }
@@ -275,7 +289,7 @@ public:
         headers.refresh(); patterns.refresh(); editor.piano=dock==2; editor.refresh(); mode.setButtonText(model.patternMode?"PAT":"SONG");
         if (channels.size()!=static_cast<int>(model.tracks().size())) { channels.clear(); for (int i=0;i<static_cast<int>(model.tracks().size());++i) { auto* c=channels.add(new Channel(model,i)); c->changed=[this]{refresh();}; mixerContent.addAndMakeVisible(c); c->sendLookAndFeelChange(); } }
         for (auto* c:channels) c->refresh();
-        wireShortcuts(owner); updatePosition(); owner.resized(); owner.repaint(); canvas.repaint();
+        menuItemsChanged();wireShortcuts(owner); updatePosition(); owner.resized(); owner.repaint(); canvas.repaint();
     }
     void updatePosition() { const double p=model.position(); position.setText(number(static_cast<int>(p)/4+1)+" : "+number(static_cast<int>(p)%4+1)+" : "+number(static_cast<int>((p-std::floor(p))*100)),juce::dontSendNotification); }
     void timerCallback() override { const auto now=juce::Time::getMillisecondCounterHiRes(); const bool wasPlaying=model.playing(); model.advance((now-previousTime)/1000.0); previousTime=now; if (wasPlaying) { updatePosition(); canvas.repaint(); owner.repaint(rulerArea); if (!model.playing()) refresh(); } }
@@ -283,12 +297,13 @@ public:
     void zoomHeight(double factor){if(!std::isfinite(factor)||factor<=0)return;const double top=static_cast<double>(lanes.getViewPositionY())/canvas.laneHeight;canvas.laneHeight=std::clamp(static_cast<int>(std::round(canvas.laneHeight*factor)),60,180);headers.laneHeight=canvas.laneHeight;owner.resized();lanes.setViewPosition(lanes.getViewPositionX(),static_cast<int>(top*canvas.laneHeight));}
     void layout() {
         const juce::ScopedValueSetter<bool> guard(layingOut,true);timeZoom.setRange(timeZoom.start(),1/zoom);const auto horizontalStart=timeZoom.start();
-        auto area=owner.getLocalBounds(); toolbarArea=area.removeFromTop(62); statusArea=area.removeFromBottom(24);
-        file.setBounds(12,15,32,32); title.setBounds(52,15,139,32); undo.setBounds(201,15,30,32); redo.setBounds(237,15,30,32);
-        stop.setBounds(291,15,32,32); play.setBounds(329,15,36,32); record.setBounds(371,15,32,32); loop.setBounds(415,15,32,32);
-        position.setBounds(462,13,134,36); tempo.setBounds(614,15,46,32); snap.setBounds(769,15,93,32);
-        mode.setBounds(705,15,53,32);
-        const int right=owner.getWidth(); browserToggle.setBounds(right-126,15,32,32); mixerToggle.setBounds(right-88,15,32,32); help.setBounds(right-50,15,32,32);
+        auto area=owner.getLocalBounds();menuBar.setBounds(area.removeFromTop(24));toolbarArea=area.removeFromTop(62);statusArea=area.removeFromBottom(24);
+        const int y=toolbarArea.getY()+15, transportX=(owner.getWidth()-112)/2;
+        title.setBounds(12,y,136,32);undo.setBounds(160,y,30,32);redo.setBounds(196,y,30,32);
+        stop.setBounds(transportX,y,32,32);play.setBounds(transportX+38,y,36,32);record.setBounds(transportX+80,y,32,32);loop.setBounds(transportX+124,y,32,32);
+        mode.setBounds(transportX-130,y,54,32);tempo.setBounds(transportX-64,y,54,32);
+        position.setBounds(transportX+174,y,146,32);snap.setBounds(transportX+336,y,104,32);
+        const int right=owner.getWidth();browserToggle.setBounds(right-126,y,32,32);mixerToggle.setBounds(right-88,y,32,32);help.setBounds(right-50,y,32,32);
         browserArea=showBrowser && !playlistMax ? area.removeFromLeft(std::min(browserWidth,owner.getWidth()/4)) : juce::Rectangle<int>{}; browser.setVisible(!browserArea.isEmpty()); if(!browserArea.isEmpty())browser.setBounds(browserArea);
         const auto patternArea=showPatterns && !playlistMax?area.removeFromRight(patternWidth):juce::Rectangle<int>{};patterns.setVisible(!patternArea.isEmpty());if(!patternArea.isEmpty())patterns.setBounds(patternArea);
         mixerArea=showMixer && !playlistMax ? area.removeFromBottom(std::clamp(dockHeight,210,std::max(210,area.getHeight()/2))) : juce::Rectangle<int>{}; arrangementArea=area;
@@ -312,8 +327,9 @@ public:
     }
     void paint(juce::Graphics& g) {
         g.fillAll(bg); g.setColour(panel); g.fillRect(toolbarArea); g.setColour(line); g.drawHorizontalLine(toolbarArea.getBottom()-1,0,static_cast<float>(owner.getWidth()));
-        g.drawVerticalLine(280,18,44); g.drawVerticalLine(603,18,44);
-        ui::label(g,"bpm",{666,17,32,29},14,muted);
+        g.drawVerticalLine(stop.getX()-8,static_cast<float>(toolbarArea.getY()+18),static_cast<float>(toolbarArea.getY()+44));
+        g.drawVerticalLine(loop.getRight()+8,static_cast<float>(toolbarArea.getY()+18),static_cast<float>(toolbarArea.getY()+44));
+        ui::label(g,"BPM",{tempo.getX(),toolbarArea.getY()+1,54,12},10,muted);
         if(!mixerArea.isEmpty() && dock==0) {
             g.setColour(panel); g.fillRect(mixerArea); g.setColour(line); g.drawHorizontalLine(mixerArea.getY(),static_cast<float>(mixerArea.getX()),static_cast<float>(mixerArea.getRight()));
             ui::label(g,"Mixer",{mixerArea.getX()+96,mixerArea.getY(),120,29},14,muted);
@@ -415,6 +431,17 @@ juce::String WorkspaceView::runSmokeTest() {
     };
     const auto click=[&](const char* id){return clickIn(*this,id);};
     if(i.model.tracks().size()!=4)return "Initial demo missing";
+    if(findChildWithID("session-menu")!=nullptr||findChildWithID("main-menu")!=&i.menuBar)return "Folder button was not replaced by menu bar";
+    if(i.getMenuBarNames()!=juce::StringArray{"File","Edit","View","Help"})return "Traditional menu names failed";
+    const auto enabled=[](const juce::PopupMenu& menu,int command){for(juce::PopupMenu::MenuItemIterator item(menu);item.next();)if(item.getItem().itemID==command)return item.getItem().isEnabled;return false;};
+    if(!enabled(i.getMenuForIndex(0,{}),Impl::newProject)||enabled(i.getMenuForIndex(0,{}),Impl::saveProject)||enabled(i.getMenuForIndex(1,{}),Impl::undoCommand)||enabled(i.getMenuForIndex(1,{}),Impl::deleteCommand))return "Menu availability regression";
+    i.menuBar.showMenu(0);if(!juce::PopupMenu::dismissAllActiveMenus())return "Native File menu failed to open";i.menuBar.showMenu(-1);
+    i.menuItemSelected(Impl::undoCommand,1);i.menuItemSelected(Impl::deleteCommand,1);
+    i.menuItemSelected(0,0);i.menuItemSelected(Impl::saveProject,0);i.menuItemSelected(Impl::newProject,3);i.menuItemSelected(-1,9);
+    if(i.model.canUndo()||i.model.tracks().size()!=4)return "Cancelled/disabled/wrong-menu choice changed data";
+    const bool visible=i.showBrowser;i.menuItemSelected(Impl::browserCommand,2);if(i.showBrowser==visible)return "View menu dispatch failed";i.menuItemSelected(Impl::browserCommand,2);
+    i.menuItemSelected(Impl::helpCommand,3);if(!i.helpOpen)return "Help menu dispatch failed";perform(ShellAction::help);grabKeyboardFocus();
+
     const auto left=i.patterns.cardBounds(0),right=i.patterns.cardBounds(1),next=i.patterns.cardBounds(2);
     if(left.isEmpty() || left.getY()!=right.getY() || left.intersects(right) || next.getX()!=left.getX() || next.getY()<=left.getBottom())return "Two-column pattern grid regression";
     const auto strip=i.channels[0]->createComponentSnapshot(i.channels[0]->getLocalBounds());
@@ -432,10 +459,15 @@ juce::String WorkspaceView::runSmokeTest() {
     keyPressed(juce::KeyPress('4',juce::ModifierKeys::shiftModifier,0));
     if(i.zoom!=1 || i.model.canUndo() || i.model.selectedClip()!=0)return "View navigation mutated music/history";
 
-    perform(ShellAction::newSession);
+    i.menuItemSelected(Impl::newProject,0);
+    if(!i.model.canUndo())return "File menu New was not undoable";
+    i.menuItemSelected(Impl::undoCommand,1);if(i.model.tracks().size()!=4)return "Edit menu undo failed";i.menuItemSelected(Impl::redoCommand,1);
     if(!i.model.tracks().empty() || i.addClip.isEnabled() || i.remove.isEnabled())return "Empty session controls failed";
     if(!click("add-track") || !click("add-clip") || i.model.tracks().size()!=1 || i.model.selectedClip()==0)return "Native add controls failed";
     if(!click("duplicate") || i.model.tracks()[0].clips.size()!=2 || !click("remove") || i.model.tracks()[0].clips.size()!=1)return "Clip controls failed";
+    i.model.selectClip(i.model.tracks()[0].clips[0].id);i.refresh();i.menuItemSelected(Impl::duplicateCommand,1);
+    if(i.model.tracks()[0].clips.size()!=2)return "Edit menu duplicate failed";
+    i.menuItemSelected(Impl::deleteCommand,1);if(i.model.tracks()[0].clips.size()!=1)return "Edit menu delete failed";
     i.headers.names[0]->showEditor();
     auto* nameEditor=i.headers.names[0]->getCurrentTextEditor();
     if(nameEditor==nullptr)return "Inline track editor missing";
@@ -489,6 +521,9 @@ juce::String WorkspaceView::runSmokeTest() {
     for(const auto size:{juce::Point<int>{1080,640},juce::Point<int>{1080,700},juce::Point<int>{1440,900},juce::Point<int>{1920,1080}}){
         setSize(size.x,size.y);
         if(i.toolbarArea.getHeight()!=62 || i.lanes.getWidth()<300 || i.lanes.getHeight()<100 || i.patterns.getRight()!=getWidth() || i.patterns.getX()<i.lanes.getRight() || i.addTrack.getBounds().intersects(i.zoomOut.getBounds()) || i.tool.getBounds().intersects(i.zoomOut.getBounds()) || i.snap.getRight()>i.browserToggle.getX())return "Responsive dock layout failed";
+        if(i.menuBar.getY()!=0||i.menuBar.getHeight()!=24||i.toolbarArea.getY()!=24||std::abs((i.stop.getX()+i.record.getRight())/2.0-getWidth()/2.0)>0.5||i.record.isEnabled())return "Menu/centred transport geometry regression";
+        const std::vector<juce::Component*> controls{&i.title,&i.undo,&i.redo,&i.mode,&i.tempo,&i.stop,&i.play,&i.record,&i.loop,&i.position,&i.snap,&i.browserToggle,&i.mixerToggle,&i.help};
+        for(std::size_t a=0;a<controls.size();++a){if(!i.toolbarArea.contains(controls[a]->getBounds()))return "Transport control escaped toolbar";for(std::size_t b=a+1;b<controls.size();++b)if(controls[a]->getBounds().intersects(controls[b]->getBounds()))return "Transport controls overlap";}
         if(!createComponentSnapshot(getLocalBounds()).isValid())return "Component render failed";
     }
     // Track cap/scrolling and undo remain independent of filesystem discovery.

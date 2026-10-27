@@ -129,3 +129,13 @@ playlist tests exercise scroll/zoom/pan bindings without changing undo/selection
 Piano tests create and erase notes through zoomed coordinates and verify undo
 restores the note rather than a view change. Existing file/installer/coverage gates
 are unchanged. Manual pointer feel, DPI and OS accessibility acceptance still apply.
+
+## Menu-bar / centred transport regressions
+Native tests require File/Edit/View/Help, absence of the folder button, correct
+availability, non-mutating cancel/disabled/wrong-menu commands, File/Edit/View/Help
+dispatch and native File popup open/dismiss. Stop-to-record bounds must be centred
+within half a pixel at 1080–1920 widths; all transport controls must be pairwise
+disjoint and inside their row. Menus use 14 px RetroByte with neutral normal/active
+rendering; palette checks cover both menu and transport rows. Record stays disabled.
+The prior playlist, rectangular marker, right-click erase/undo, source grid, mixer
+and zoom regressions are retained. Menu keyboard/DPI/visual acceptance is manual.

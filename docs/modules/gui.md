@@ -74,3 +74,13 @@ controls, Ctrl-wheel zoom, middle-button panning and zoom presets mutate only
 view state; they never add undo entries or alter notes/placements. Editor drawing,
 hit tests, scrolling and gestures must share the same zoom transform. All callbacks
 are synchronous on the message thread; owners outlive their controls.
+
+## Traditional menus and centred transport
+A native JUCE MenuBarComponent exposes File/Edit/View/Help above the existing
+transport row, replacing the top-left folder button. Its MenuBarModel lives in
+the composition root and outlives the bar; detach the model during teardown.
+Menu state reflects current availability; cancel/unknown/wrong-menu and disabled
+commands must not mutate state. Saving/recording remain unavailable. Stop/play/
+record form a 112 px group centred on the entire workspace at every supported
+width; mode/tempo sit immediately left, loop/position/snap immediately right. Preserve
+the previously restored playlist row, source grid, mixer and mouse behavior.

@@ -29,6 +29,9 @@ public:
     juce::Font getTextButtonFont(juce::TextButton&, int) override;
     juce::Font getComboBoxFont(juce::ComboBox&) override;
     juce::Font getPopupMenuFont() override;
+    juce::Font getMenuBarFont(juce::MenuBarComponent&,int,const juce::String&) override;
+    void drawMenuBarBackground(juce::Graphics&,int,int,bool,juce::MenuBarComponent&) override;
+    void drawMenuBarItem(juce::Graphics&,int,int,int,const juce::String&,bool,bool,bool,juce::MenuBarComponent&) override;
     juce::Label* createSliderTextBox(juce::Slider&) override;
     void drawButtonBackground(juce::Graphics&, juce::Button&, const juce::Colour&, bool, bool) override;
     void drawButtonText(juce::Graphics&, juce::TextButton&, bool, bool) override;

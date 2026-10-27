@@ -32,6 +32,10 @@ juce::Typeface::Ptr Look::getTypefaceForFont(const juce::Font& requested) {
 juce::Font Look::getTextButtonFont(juce::TextButton&, int) { return juce::Font(font()); }
 juce::Font Look::getComboBoxFont(juce::ComboBox&) { return juce::Font(font()); }
 juce::Font Look::getPopupMenuFont() { return juce::Font(font(14)); }
+juce::Font Look::getMenuBarFont(juce::MenuBarComponent&,int,const juce::String&){return juce::Font(font(14));}
+void Look::drawMenuBarBackground(juce::Graphics& g,int w,int h,bool,juce::MenuBarComponent&){g.fillAll(panel);g.setColour(border);g.drawHorizontalLine(h-1,0,static_cast<float>(w));}
+void Look::drawMenuBarItem(juce::Graphics& g,int w,int h,int,const juce::String& text,bool over,bool open,bool,juce::MenuBarComponent& bar){if(over||open){g.setColour(selected);g.fillRect(0,0,w,h);}g.setColour(bar.isEnabled()?foreground:secondary);g.setFont(font(14));g.drawText(text,0,0,w,h,juce::Justification::centred,true);}
+
 juce::Label* Look::createSliderTextBox(juce::Slider& slider) {
     auto* box = juce::LookAndFeel_V4::createSliderTextBox(slider);
     box->setFont(font(14)); box->setBorderSize({0,4,0,4});
