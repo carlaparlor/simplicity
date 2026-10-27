@@ -7,7 +7,10 @@ Track/source colours are local identities, never a global accent. The executable
 icon is the actual font's lowercase s on charcoal. Commercial asset rights remain
 unresolved; development use is owner-authorized, not a public release clearance.
 
-One compact transport; no oversized internal brand and no inspector. Files on the
+A native 24 px **File / Edit / View / Help** menu bar replaces the top-left
+folder button. Below it, stop/play/record are centred on the workspace; mode/tempo
+sit left and loop/position/snap right. Project title and undo/redo remain left,
+panel toggles right. Record stays disabled. No oversized brand and no inspector. Files on the
 left, reusable **Patterns on the right**, playlist in the middle. Mixer, channel
 rack and piano roll share the bottom dock. Drag the three panel boundaries to
 resize. Track names and M/S are separate rows with at least 8 px clearance. Browser/pattern widths are bounded and adapt at the minimum window size.
@@ -82,7 +85,9 @@ Native text editing owns its input; piano/mixer focus does not select playlist
 tools or duplicate/delete playlist clips. Unsupported commands, including plugin
 picker, recording and piano-copy shortcuts, are not mapped to unrelated actions.
 An explicit toolbar Remove can remove a selected lane; Delete without a clip does
-not silently delete a lane. The Project menu contains New/Demo and disabled Save.
+not silently delete a lane. File contains New/Demo and disabled Save. Edit contains undo/redo and selected
+placement duplicate/delete. View contains browser/patterns/mixer/rack/piano; Help
+contains shortcuts. Cancelled, disabled and unknown menu choices do nothing.
 
 ## Honest boundaries
 All changes exist **only in memory**. Closing loses them. No project save/recovery,

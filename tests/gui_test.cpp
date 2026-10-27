@@ -122,6 +122,10 @@ int main(int argc, char** argv) {
     sources.newSession();picker.refresh();CHECK(picker.cardBounds(0).isEmpty());for(int n=0;n<3;++n)CHECK(sources.addPattern("Card"));picker.refresh();CHECK(!picker.cardBounds(2).isEmpty());CHECK(picker.cardBounds(3).isEmpty());
     for(int width:{190,228,300}){picker.setSize(width,300);CHECK(!picker.cardBounds(0).intersects(picker.cardBounds(1)));CHECK(picker.cardBounds(1).getRight()<width);}
     picker.setLookAndFeel(nullptr);
+    auto* mainMenu=dynamic_cast<juce::MenuBarComponent*>(view.findChildWithID("main-menu"));CHECK(mainMenu!=nullptr);CHECK(mainMenu->isVisible());CHECK(view.findChildWithID("session-menu")==nullptr);
+    CHECK(look.getMenuBarFont(*mainMenu,0,"File").getTypefaceName()=="RetroByte");CHECK(look.getMenuBarFont(*mainMenu,0,"File").getHeight()==14);
+    juce::Image activeMenu(juce::Image::ARGB,70,24,true);{juce::Graphics g(activeMenu);look.drawMenuBarBackground(g,70,24,true,*mainMenu);look.drawMenuBarItem(g,70,24,0,"File",true,true,true,*mainMenu);}
+    for(int y=0;y<24;++y)for(int x=0;x<70;++x){const auto colour=activeMenu.getPixelAt(x,y);CHECK(colour.getRed()==colour.getGreen()&&colour.getGreen()==colour.getBlue());}
     const auto error = view.runSmokeTest();
     if (error.isNotEmpty()) { std::cerr << error << '\n'; return 1; }
     CHECK(view.workspace().tracks().size() == 4);
@@ -150,7 +154,7 @@ int main(int argc, char** argv) {
     CHECK(image.getPixelAt(5, 65) == ui::panel);
     CHECK(image.getPixelAt(1438, 500) == ui::panel); // Patterns is explicitly the rightmost dock.
     // Toolbar/browser must remain neutral even when controls are active. Track/clip colours are allowed below.
-    for(int y=0;y<62;++y)for(int x=0;x<image.getWidth();++x) {
+    for(int y=0;y<86;++y)for(int x=0;x<image.getWidth();++x) {
         const auto pixel=image.getPixelAt(x,y);
         CHECK(pixel.getRed()==pixel.getGreen()); CHECK(pixel.getGreen()==pixel.getBlue());
     }
